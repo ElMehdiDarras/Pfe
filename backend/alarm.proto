@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package alarm;
+
+service AlarmService {
+  // Box sends alarm updates to server
+  rpc StreamAlarms (stream AlarmUpdate) returns (AlarmResponse) {}
+}
+
+message AlarmUpdate {
+  string box_id = 1;
+  string site_id = 2;
+  string timestamp = 3;
+  repeated PinStatus pins = 4;
+}
+
+message PinStatus {
+  int32 pin_id = 1;
+  string equipment = 2;
+  string description = 3;
+  AlarmState status = 4;
+  AlarmLevel level = 5;
+}
+
+enum AlarmState {
+  OK = 0;
+  WARNING = 1;
+  MAJOR = 2;
+  CRITICAL = 3;
+  UNKNOWN = 4;
+}
+
+enum AlarmLevel {
+  INFORMATION = 0;
+  WARNING = 1;
+  MAJOR = 2;
+  CRITICAL = 3;
+}
+
+message AlarmResponse {
+  bool success = 1;
+  string message = 2;
+}

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Alarm = require('../models/alarm');
 const Site = require('../models/sites.js');
+const { isSupervisorOrAdmin } = require('../middleware/auth');
 
 // Get all alarms with pagination
 router.get('/', async (req, res) => {
@@ -10,12 +11,19 @@ router.get('/', async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
     
-    const alarms = await Alarm.find()
+    let query = {};
+    
+    // For agents, only show alarms from their assigned sites
+    if (req.user.role === 'agent') {
+      query.siteId = { $in: req.user.sites };
+    }
+    
+    const alarms = await Alarm.find(query)
       .sort({ timestamp: -1 })
       .skip(skip)
       .limit(limit);
     
-    const total = await Alarm.countDocuments();
+    const total = await Alarm.countDocuments(query);
     
     res.json({
       alarms,
@@ -34,7 +42,17 @@ router.get('/', async (req, res) => {
 // Get active alarms (not OK or not resolved)
 router.get('/active', async (req, res) => {
   try {
-    const activeAlarms = await Alarm.getActiveAlarms();
+    let query = {
+      status: { $ne: 'OK' },
+      resolvedAt: null
+    };
+    
+    // For agents, filter by their accessible sites
+    if (req.user.role === 'agent') {
+      query.siteId = { $in: req.user.sites };
+    }
+    
+    const activeAlarms = await Alarm.find(query).sort({ timestamp: -1 });
     res.json(activeAlarms);
   } catch (error) {
     console.error('Error getting active alarms:', error);
@@ -45,7 +63,14 @@ router.get('/active', async (req, res) => {
 // Get alarms by site
 router.get('/site/:siteId', async (req, res) => {
   try {
-    const alarms = await Alarm.getAlarmsBySite(req.params.siteId);
+    const siteName = req.params.siteId.replace(/-/g, ' ');
+    
+    // Check if agent has access to this site
+    if (req.user.role === 'agent' && !req.user.sites.includes(siteName)) {
+      return res.status(403).json({ error: 'You do not have access to this site' });
+    }
+    
+    const alarms = await Alarm.getAlarmsBySite(siteName);
     res.json(alarms);
   } catch (error) {
     console.error(`Error getting alarms for site ${req.params.siteId}:`, error);
@@ -59,7 +84,22 @@ router.get('/filter', async (req, res) => {
     const { siteId, status, startDate, endDate, equipment } = req.query;
     const filter = {};
     
-    if (siteId) filter.siteId = siteId;
+    // Handle site filtering
+    if (siteId) {
+      const siteName = siteId.replace(/-/g, ' ');
+      
+      // Check if agent has access to this site
+      if (req.user.role === 'agent' && !req.user.sites.includes(siteName)) {
+        return res.status(403).json({ error: 'You do not have access to this site' });
+      }
+      
+      filter.siteId = siteName;
+    } else if (req.user.role === 'agent') {
+      // For agents without specific site, limit to their accessible sites
+      filter.siteId = { $in: req.user.sites };
+    }
+    
+    // Add other filters
     if (status) filter.status = status;
     if (equipment) filter.equipment = equipment;
     
@@ -80,6 +120,12 @@ router.get('/filter', async (req, res) => {
 // Get alarm statistics
 router.get('/statistics', async (req, res) => {
   try {
+    // Base filter to apply site restrictions for agents
+    let baseFilter = {};
+    if (req.user.role === 'agent') {
+      baseFilter.siteId = { $in: req.user.sites };
+    }
+    
     const [
       critical, 
       major, 
@@ -89,17 +135,24 @@ router.get('/statistics', async (req, res) => {
       acknowledged, 
       unacknowledged
     ] = await Promise.all([
-      Alarm.countDocuments({ status: 'CRITICAL', resolvedAt: null }),
-      Alarm.countDocuments({ status: 'MAJOR', resolvedAt: null }),
-      Alarm.countDocuments({ status: 'WARNING', resolvedAt: null }),
-      Alarm.countDocuments({ status: 'OK' }),
-      Alarm.countDocuments(),
-      Alarm.countDocuments({ acknowledgedAt: { $ne: null } }),
-      Alarm.countDocuments({ acknowledgedAt: null, status: { $ne: 'OK' } })
+      Alarm.countDocuments({ ...baseFilter, status: 'CRITICAL', resolvedAt: null }),
+      Alarm.countDocuments({ ...baseFilter, status: 'MAJOR', resolvedAt: null }),
+      Alarm.countDocuments({ ...baseFilter, status: 'WARNING', resolvedAt: null }),
+      Alarm.countDocuments({ ...baseFilter, status: 'OK' }),
+      Alarm.countDocuments(baseFilter),
+      Alarm.countDocuments({ ...baseFilter, acknowledgedAt: { $ne: null } }),
+      Alarm.countDocuments({ ...baseFilter, acknowledgedAt: null, status: { $ne: 'OK' } })
     ]);
     
     // Get alarm counts by site
-    const sites = await Site.find().select('name');
+    // For agents, only get stats for their assigned sites
+    let sites;
+    if (req.user.role === 'agent') {
+      sites = req.user.sites.map(siteName => ({ name: siteName }));
+    } else {
+      sites = await Site.find().select('name');
+    }
+    
     const siteStats = await Promise.all(
       sites.map(async (site) => {
         const activeCount = await Alarm.countDocuments({ 
@@ -125,19 +178,25 @@ router.get('/statistics', async (req, res) => {
       const hourEnd = new Date(hourStart);
       hourEnd.setHours(hourStart.getHours() + 1);
       
+      // Apply site filtering for agents
+      const timeFilter = {
+        timestamp: { $gte: hourStart, $lt: hourEnd },
+        ...baseFilter
+      };
+      
       const criticalCount = await Alarm.countDocuments({
-        status: 'CRITICAL',
-        timestamp: { $gte: hourStart, $lt: hourEnd }
+        ...timeFilter,
+        status: 'CRITICAL'
       });
       
       const majorCount = await Alarm.countDocuments({
-        status: 'MAJOR',
-        timestamp: { $gte: hourStart, $lt: hourEnd }
+        ...timeFilter,
+        status: 'MAJOR'
       });
       
       const warningCount = await Alarm.countDocuments({
-        status: 'WARNING',
-        timestamp: { $gte: hourStart, $lt: hourEnd }
+        ...timeFilter,
+        status: 'WARNING'
       });
       
       last24Hours.push({
@@ -174,6 +233,12 @@ router.get('/:id', async (req, res) => {
     if (!alarm) {
       return res.status(404).json({ error: 'Alarm not found' });
     }
+    
+    // Check if agent has access to this alarm's site
+    if (req.user.role === 'agent' && !req.user.sites.includes(alarm.siteId)) {
+      return res.status(403).json({ error: 'You do not have access to this alarm' });
+    }
+    
     res.json(alarm);
   } catch (error) {
     console.error(`Error getting alarm ${req.params.id}:`, error);
@@ -189,26 +254,128 @@ router.post('/:id/acknowledge', async (req, res) => {
       return res.status(404).json({ error: 'Alarm not found' });
     }
     
-    const userId = req.body.userId || 'system';
-    await alarm.acknowledge(userId);
+    // Check if agent has access to this alarm's site
+    if (req.user.role === 'agent' && !req.user.sites.includes(alarm.siteId)) {
+      return res.status(403).json({ error: 'You do not have access to this alarm' });
+    }
     
-    // Emit socket event
+    // Use the authenticated user's ID for acknowledgment
+    await alarm.acknowledge(req.user.username);
+    
+    // Emit socket event to all applicable users
     const io = req.app.get('io');
     if (io) {
-      io.emit('alarm-acknowledged', {
+      const acknowledgementData = {
         alarmId: alarm._id,
         siteId: alarm.siteId,
         boxId: alarm.boxId,
         pinId: alarm.pinId,
-        acknowledgedBy: userId,
+        acknowledgedBy: req.user.username,
         acknowledgedAt: alarm.acknowledgedAt
-      });
+      };
+      
+      // Emit to supervisors and admins
+      io.to('all-sites').emit('alarm-acknowledged', acknowledgementData);
+      
+      // Emit to site-specific room for agents
+      io.to(`site-${alarm.siteId.replace(/\s+/g, '-')}`).emit('alarm-acknowledged', acknowledgementData);
     }
     
     res.json({ success: true, alarm });
   } catch (error) {
     console.error(`Error acknowledging alarm ${req.params.id}:`, error);
     res.status(500).json({ error: 'Failed to acknowledge alarm' });
+  }
+});
+
+// Get alarm history for a specific site and timeframe
+// Useful for generating reports
+router.get('/history/:siteId', async (req, res) => {
+  try {
+    const siteName = req.params.siteId.replace(/-/g, ' ');
+    const { startDate, endDate } = req.query;
+    
+    // Check if agent has access to this site
+    if (req.user.role === 'agent' && !req.user.sites.includes(siteName)) {
+      return res.status(403).json({ error: 'You do not have access to this site' });
+    }
+    
+    const filter = {
+      siteId: siteName
+    };
+    
+    if (startDate || endDate) {
+      filter.timestamp = {};
+      if (startDate) filter.timestamp.$gte = new Date(startDate);
+      if (endDate) filter.timestamp.$lte = new Date(endDate);
+    }
+    
+    const alarms = await Alarm.find(filter)
+      .sort({ timestamp: -1 })
+      .populate('statusHistory');
+      
+    res.json(alarms);
+  } catch (error) {
+    console.error(`Error getting alarm history for site ${req.params.siteId}:`, error);
+    res.status(500).json({ error: 'Failed to retrieve alarm history' });
+  }
+});
+
+// Generate report (for supervisors and admins)
+router.get('/report/generate', isSupervisorOrAdmin, async (req, res) => {
+  try {
+    const { siteId, startDate, endDate, format } = req.query;
+    
+    // Validate parameters
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'Start date and end date are required' });
+    }
+    
+    // Build filter
+    const filter = {};
+    
+    if (siteId) {
+      filter.siteId = siteId.replace(/-/g, ' ');
+    } else if (req.user.role === 'agent') {
+      // For agents, limit to their sites
+      filter.siteId = { $in: req.user.sites };
+    }
+    
+    filter.timestamp = {
+      $gte: new Date(startDate),
+      $lte: new Date(endDate)
+    };
+    
+    // Get alarms
+    const alarms = await Alarm.find(filter).sort({ timestamp: -1 });
+    
+    // Simple JSON response for now
+    // In a real implementation, you'd generate PDF/Excel/CSV based on format
+    res.json({
+      report: {
+        generatedAt: new Date(),
+        generatedBy: `${req.user.firstName} ${req.user.lastName}`,
+        parameters: {
+          siteId,
+          startDate,
+          endDate,
+          format
+        },
+        summary: {
+          totalAlarms: alarms.length,
+          critical: alarms.filter(a => a.status === 'CRITICAL').length,
+          major: alarms.filter(a => a.status === 'MAJOR').length,
+          warning: alarms.filter(a => a.status === 'WARNING').length,
+          ok: alarms.filter(a => a.status === 'OK').length,
+          acknowledged: alarms.filter(a => a.acknowledgedAt !== null).length,
+          unacknowledged: alarms.filter(a => a.acknowledgedAt === null && a.status !== 'OK').length
+        },
+        alarms
+      }
+    });
+  } catch (error) {
+    console.error('Error generating report:', error);
+    res.status(500).json({ error: 'Failed to generate report' });
   }
 });
 

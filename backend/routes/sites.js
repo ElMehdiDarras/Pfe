@@ -2,18 +2,34 @@ const express = require('express');
 const router = express.Router();
 const Site = require('../models/sites');
 const Alarm = require('../models/alarm');
+const { auth } = require('../middleware/auth');
 
 // Get all sites
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
-    const sites = await Site.find();
-    res.json(sites);
+    let sitesQuery = {};
+    
+    // If user is an agent, only return their assigned sites
+    if (req.user.role === 'agent') {
+      sitesQuery = { name: { $in: req.user.sites } };
+    }
+    
+    const sites = await Site.find(sitesQuery);
+    
+    // Transform the data to make it frontend-friendly
+    const transformedSites = sites.map(site => {
+      const siteObj = site.toObject();
+      // Add id field based on name (for frontend compatibility)
+      siteObj.id = site.name.replace(/\s+/g, '-');
+      return siteObj;
+    });
+    
+    res.json(transformedSites);
   } catch (error) {
     console.error('Error getting sites:', error);
     res.status(500).json({ error: 'Failed to retrieve sites' });
   }
 });
-
 // Get sites with status summary
 router.get('/summary', async (req, res) => {
   try {
@@ -31,6 +47,8 @@ router.get('/summary', async (req, res) => {
         // Convert Mongoose document to plain object and add alarm count
         const siteObj = site.toObject();
         siteObj.activeAlarms = activeAlarms;
+        // Add id field for frontend compatibility
+        siteObj.id = site.name.replace(/\s+/g, '-');
         return siteObj;
       })
     );
@@ -43,26 +61,44 @@ router.get('/summary', async (req, res) => {
 });
 
 // Get a specific site
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
-    const site = await Site.findById(req.params.id);
+    // Try finding by MongoDB _id first
+    let site = null;
+    
+    try {
+      if (req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+        // This is a valid MongoDB ObjectId
+        site = await Site.findById(req.params.id);
+      }
+    } catch (err) {
+      // Ignore error, try other methods
+    }
+    
+    // If not found by _id, try by name
+    if (!site) {
+      const nameFromId = req.params.id.replace(/-/g, ' ');
+      site = await Site.findOne({ name: nameFromId });
+      
+      // If still not found, try the original param
+      if (!site) {
+        site = await Site.findOne({ name: req.params.id });
+      }
+    }
+    
     if (!site) {
       return res.status(404).json({ error: 'Site not found' });
     }
     
-    // Get active alarms for this site
-    const activeAlarms = await Alarm.find({
-      siteId: site.name,
-      status: { $ne: 'OK' },
-      resolvedAt: null
-    }).sort({ timestamp: -1 });
+    // Check if agent has access to this site
+    if (req.user.role === 'agent' && !req.user.sites.includes(site.name)) {
+      return res.status(403).json({ error: 'You do not have access to this site' });
+    }
     
-    // Convert to plain object and add alarms
-    const siteWithAlarms = site.toObject();
-    siteWithAlarms.activeAlarms = activeAlarms.length;
-    siteWithAlarms.alarms = activeAlarms;
+    // Continue with the rest of your code...
+    // ...
     
-    res.json(siteWithAlarms);
+    res.json(site);
   } catch (error) {
     console.error(`Error getting site ${req.params.id}:`, error);
     res.status(500).json({ error: 'Failed to retrieve site' });
@@ -88,6 +124,7 @@ router.get('/name/:name', async (req, res) => {
     const siteWithAlarms = site.toObject();
     siteWithAlarms.activeAlarms = activeAlarms.length;
     siteWithAlarms.alarms = activeAlarms;
+    siteWithAlarms.id = site.name.replace(/\s+/g, '-');
     
     res.json(siteWithAlarms);
   } catch (error) {
@@ -113,13 +150,17 @@ router.post('/', async (req, res) => {
     const newSite = new Site(req.body);
     await newSite.save();
     
+    // Add id for frontend compatibility
+    const siteObj = newSite.toObject();
+    siteObj.id = newSite.name.replace(/\s+/g, '-');
+    
     // Notify connected clients via socket.io
     const io = req.app.get('io');
     if (io) {
-      io.emit('site-created', newSite);
+      io.emit('site-created', siteObj);
     }
     
-    res.status(201).json(newSite);
+    res.status(201).json(siteObj);
   } catch (error) {
     console.error('Error creating site:', error);
     if (error.name === 'ValidationError') {
@@ -154,13 +195,17 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Site not found' });
     }
     
+    // Add id for frontend compatibility
+    const siteObj = site.toObject();
+    siteObj.id = site.name.replace(/\s+/g, '-');
+    
     // Notify connected clients via socket.io
     const io = req.app.get('io');
     if (io) {
-      io.emit('site-updated', site);
+      io.emit('site-updated', siteObj);
     }
     
-    res.json(site);
+    res.json(siteObj);
   } catch (error) {
     console.error(`Error updating site ${req.params.id}:`, error);
     if (error.name === 'ValidationError') {
@@ -170,6 +215,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+// Rest of the file remains the same
 // Add a box to a site
 router.post('/:id/boxes', async (req, res) => {
   try {

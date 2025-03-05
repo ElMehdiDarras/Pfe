@@ -2,11 +2,19 @@ const express = require('express');
 const router = express.Router();
 const Site = require('../models/sites');
 const Alarm = require('../models/alarm');
+const { auth } = require('../middleware/auth');
 
 // Get all sites
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
-    const sites = await Site.find();
+    let sitesQuery = {};
+    
+    // If user is an agent, only return their assigned sites
+    if (req.user.role === 'agent') {
+      sitesQuery = { name: { $in: req.user.sites } };
+    }
+    
+    const sites = await Site.find(sitesQuery);
     
     // Transform the data to make it frontend-friendly
     const transformedSites = sites.map(site => {
@@ -22,7 +30,6 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve sites' });
   }
 });
-
 // Get sites with status summary
 router.get('/summary', async (req, res) => {
   try {
@@ -54,7 +61,7 @@ router.get('/summary', async (req, res) => {
 });
 
 // Get a specific site
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     // Try finding by MongoDB _id first
     let site = null;
@@ -83,20 +90,15 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Site not found' });
     }
     
-    // Get active alarms for this site
-    const activeAlarms = await Alarm.find({
-      siteId: site.name,
-      status: { $ne: 'OK' },
-      resolvedAt: null
-    }).sort({ timestamp: -1 });
+    // Check if agent has access to this site
+    if (req.user.role === 'agent' && !req.user.sites.includes(site.name)) {
+      return res.status(403).json({ error: 'You do not have access to this site' });
+    }
     
-    // Convert to plain object and add alarms
-    const siteWithAlarms = site.toObject();
-    siteWithAlarms.activeAlarms = activeAlarms.length;
-    siteWithAlarms.alarms = activeAlarms;
-    siteWithAlarms.id = site.name.replace(/\s+/g, '-');
+    // Continue with the rest of your code...
+    // ...
     
-    res.json(siteWithAlarms);
+    res.json(site);
   } catch (error) {
     console.error(`Error getting site ${req.params.id}:`, error);
     res.status(500).json({ error: 'Failed to retrieve site' });

@@ -7,16 +7,22 @@ const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 const path = require('path');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 // Import routes
 const alarmsRoutes = require('./routes/alarms');
 const sitesRoutes = require('./routes/sites');
+const authRoutes = require('./routes/auth');
+
+// Import auth middleware
+const { auth, hasSiteAccess } = require('./middleware/auth');
 
 // Initialize Express app
 const app = express();
 
 // Apply middleware first
+app.use('api/auth', authRoutes)
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:5000",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -24,6 +30,7 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 app.use(express.json());
+app.use(cookieParser());
 
 // Create HTTP server
 const server = http.createServer(app);
@@ -69,9 +76,47 @@ app.get('/api/debug', (req, res) => {
   });
 });
 
-// Routes
-app.use('/api/alarms', alarmsRoutes);
-app.use('/api/sites', sitesRoutes);
+// Authentication routes (no auth middleware needed here)
+app.use('/api/auth', authRoutes);
+
+// Protected routes (require authentication)
+app.use('/api/alarms', auth, alarmsRoutes);
+app.use('/api/sites', auth, hasSiteAccess, sitesRoutes);
+
+// Socket.IO authentication middleware
+io.use(async (socket, next) => {
+  try {
+    // Get token from handshake auth or cookies
+    const token = socket.handshake.auth?.token || socket.handshake.headers?.cookie?.split('token=')[1]?.split(';')[0];
+    
+    if (!token) {
+      return next(new Error('Authentication required'));
+    }
+    
+    // Verify token
+    const jwt = require('jsonwebtoken');
+    const User = require('./models/user');
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'alarm-manager-secret');
+    const user = await User.findById(decoded.id);
+    
+    if (!user || !user.active) {
+      return next(new Error('User not found or inactive'));
+    }
+    
+    // Attach user to socket
+    socket.user = {
+      id: user._id,
+      username: user.username,
+      role: user.role,
+      sites: user.sites
+    };
+    
+    next();
+  } catch (error) {
+    next(new Error('Authentication failed'));
+  }
+});
 
 // Socket.IO connection
 io.on('connection', (socket) => {
@@ -81,8 +126,19 @@ io.on('connection', (socket) => {
   socket.emit('connection-established', { 
     message: 'Successfully connected to server',
     socketId: socket.id,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    user: socket.user
   });
+  
+  // Join rooms based on user role and sites
+  if (socket.user.role === 'supervisor' || socket.user.role === 'administrator') {
+    socket.join('all-sites');
+  } else {
+    // Join rooms for each site the agent has access to
+    socket.user.sites.forEach(site => {
+      socket.join(`site-${site.replace(/\s+/g, '-')}`);
+    });
+  }
   
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
@@ -204,15 +260,21 @@ grpcServer.addService(alarmProto.AlarmService.service, {
           }
           
           // Emit real-time update via Socket.IO
-          io.emit('alarm-status-change', {
-            siteId: alarmUpdate.site_id,
-            boxId: alarmUpdate.box_id,
-            pinId: pin.pin_id.toString(),
-            equipment: pin.equipment || 'Unknown',
-            description: pin.description,
+          const alarmUpdate = {
+            siteId: alarmData.siteId,
+            boxId: alarmData.boxId,
+            pinId: alarmData.pinId,
+            equipment: alarmData.equipment,
+            description: alarmData.description,
             status: statusName,
-            timestamp: new Date(alarmUpdate.timestamp)
-          });
+            timestamp: alarmData.timestamp
+          };
+          
+          // Emit to all supervisors and administrators
+          io.to('all-sites').emit('alarm-status-change', alarmUpdate);
+          
+          // Emit to site-specific room for agents
+          io.to(`site-${alarmData.siteId.replace(/\s+/g, '-')}`).emit('alarm-status-change', alarmUpdate);
         } catch (error) {
           console.error('Error saving alarm to MongoDB:', error);
         }

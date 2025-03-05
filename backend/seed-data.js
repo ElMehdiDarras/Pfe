@@ -8,7 +8,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/alarm-
 // Sample site data without equipment initially
 const siteData = [
   {
-    name: 'Rabat-Hay NAHDA',
+    name: 'Rabat-Hay-NAHDA',
     description: 'Site Type 1 à Hay NAHDA',
     location: 'Rabat',
     vlan: '610',
@@ -61,7 +61,7 @@ const siteData = [
     equipment: []
   },
   {
-    name: 'Casa-Nations Unies',
+    name: 'Casa-Nations-Unies',
     description: 'Site Type 2 à Nations Unies',
     location: 'Casablanca',
     vlan: '630',

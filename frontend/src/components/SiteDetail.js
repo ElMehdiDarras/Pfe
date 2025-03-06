@@ -6,36 +6,74 @@ import {
   Chip, Card, CardContent, CircularProgress, Button, Pagination
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useData } from '../context/DataProvider';
 
 function SiteDetail() {
   const { siteId } = useParams();
   const navigate = useNavigate();
+  
   const [activeTab, setActiveTab] = useState(0);
   const { sites, alarms, loading, fetchAllData } = useData();
   const [alarmPage, setAlarmPage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
+  const initialLoadComplete = useRef(false);
   const rowsPerPage = 10; // Number of rows per page
-  const dataFetchedRef = useRef(false);
   
-  console.log('SiteDetail - siteId:', siteId);
+  console.log('SiteDetail - siteId from URL:', siteId);
   
-  // Different ways to find the site (try various ID formats)
-  const site = sites.find(s => s.id === siteId) || 
-               sites.find(s => s.name === siteId) ||
-               sites.find(s => s._id === siteId) ||  // Add MongoDB _id check
-               sites.find(s => s.id?.replace(/-/g, ' ') === siteId) ||
-               sites.find(s => s.name?.replace(/-/g, ' ') === siteId);
-  
-  // Only fetch data once when needed to prevent infinite loop
+  // Re-fetch data only on initial mount or manual refresh
   useEffect(() => {
-    if (!loading && sites.length > 0 && !site && !dataFetchedRef.current) {
-      console.log('Site not found, refreshing data once...');
-      dataFetchedRef.current = true;
+    // Only fetch on initial mount
+    if (!initialLoadComplete.current) {
+      console.log("SiteDetail: Initial data fetch");
       fetchAllData();
+      initialLoadComplete.current = true;
     }
-  }, [siteId, sites, site, loading, fetchAllData]);
+  }, [fetchAllData]); // Remove location.pathname and siteId from dependencies
+  
+  // Try multiple ways to find the site
+  const site = sites.find(s => {
+    // Try matching by id (string comparison)
+    if (s.id === siteId) return true;
+    
+    // Try matching by MongoDB _id
+    if (s._id === siteId) return true;
+    
+    // Try matching by name with hyphen replacement
+    if (s.name && s.name.replace(/\s+/g, '-') === siteId) return true;
+    
+    // Try direct name match
+    if (s.name === siteId) return true;
+    
+    return false;
+  });
+  
+  console.log('Found site:', site);
+  
+  // Debug logging function
+  const logAllPossibleMatches = () => {
+    sites.forEach(s => {
+      console.log('Site comparison:', {
+        'site.id': s.id,
+        'url.siteId': siteId,
+        'idMatch': s.id === siteId,
+        'site._id': s._id,
+        '_idMatch': s._id === siteId,
+        'site.name': s.name,
+        'nameMatch': s.name === siteId,
+        'site.name-with-hyphens': s.name?.replace(/\s+/g, '-'),
+        'hyphenMatch': s.name?.replace(/\s+/g, '-') === siteId
+      });
+    });
+  };
+  
+  // Call the debugging function if site isn't found
+  if (sites.length > 0 && !site) {
+    logAllPossibleMatches();
+  }
 
   // Reset pagination when tab changes
   useEffect(() => {
@@ -57,6 +95,12 @@ function SiteDetail() {
 
   const handleHistoryPageChange = (event, newPage) => {
     setHistoryPage(newPage);
+  };
+  
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchAllData();
+    setRefreshing(false);
   };
 
   // Function to get status chip
@@ -94,7 +138,7 @@ function SiteDetail() {
     }
   };
   
-  if (loading) {
+  if (loading && sites.length === 0) {
     return (
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
@@ -143,14 +187,17 @@ function SiteDetail() {
     );
   }
   
-  // Filter alarms for this site - try with both ID and name
-  const siteAlarms = alarms.filter(alarm => 
-    alarm.siteId === site.id || 
-    alarm.siteId === site._id ||
-    alarm.siteId === site.name ||
-    (site.id && alarm.siteId === site.id.replace(/-/g, ' ')) ||
-    (site.name && alarm.siteId === site.name.replace(/-/g, ' '))
-  );
+  // Filter alarms for this site - try with multiple identifiers
+  const siteAlarms = alarms.filter(alarm => {
+    // Try various ways to match site identifiers
+    return alarm.siteId === site.id || 
+           alarm.siteId === site._id ||
+           alarm.siteId === site.name ||
+           (alarm.siteId && site.name && alarm.siteId.toLowerCase() === site.name.toLowerCase()) ||
+           (alarm.site && alarm.site === site.name);
+  });
+  
+  console.log(`Found ${siteAlarms.length} alarms for site ${site.name}`);
   
   // Active alarms (not OK status)
   const activeAlarms = siteAlarms.filter(a => a.status !== 'OK');
@@ -190,17 +237,30 @@ function SiteDetail() {
   
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Button 
-        variant="outlined" 
-        startIcon={<ArrowBackIcon />} 
-        onClick={handleBack} 
-        sx={{ mb: 2 }}
-      >
-        Retour au tableau de bord
-      </Button>
-      <Typography variant="h4" gutterBottom component="div">
-        {site.name}
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Button 
+            variant="outlined" 
+            startIcon={<ArrowBackIcon />} 
+            onClick={handleBack} 
+            sx={{ mr: 2 }}
+          >
+            Retour
+          </Button>
+          <Typography variant="h4" component="div">
+            {site.name}
+          </Typography>
+        </Box>
+        <Button 
+          variant="outlined" 
+          startIcon={refreshing ? <CircularProgress size={20} /> : <RefreshIcon />}
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          {refreshing ? 'Rafraîchissement...' : 'Rafraîchir'}
+        </Button>
+      </Box>
+      
       <Typography variant="subtitle1" gutterBottom color="text.secondary">
         {site.description || `Site Type ${site.name.includes('Nations') ? '2' : '1'}`} | VLAN: {site.vlan} | {site.location}
       </Typography>
@@ -328,7 +388,6 @@ function SiteDetail() {
               </Box>
             )}
             
-            {/* Rest of tabs remain the same */}
             {/* Equipment tab */}
             {activeTab === 1 && (
               <Box sx={{ p: 3 }}>
@@ -357,7 +416,7 @@ function SiteDetail() {
                               size="small" 
                             />
                           </TableCell>
-                          <TableCell>{new Date().toLocaleString()}</TableCell>
+                          <TableCell>{formatDate(box.lastSeen) || new Date().toLocaleString()}</TableCell>
                         </TableRow>
                       ))}
                       {(!site.boxes || site.boxes.length === 0) && (

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Container, Grid, Paper, Typography, Box, Tabs, Tab, Card, CardContent, Button, CircularProgress } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useData } from '../context/DataProvider';
+import { useAuth } from '../context/AuthContext';
 import AlarmTable from './AlarmTable';
 import SiteOverview from './SiteOverview';
 
@@ -10,6 +12,7 @@ import SiteOverview from './SiteOverview';
  * Dashboard component showing an overview of all alarm monitoring data
  */
 function Dashboard({ defaultTab = 0 }) {
+  const location = useLocation(); // Get location for route change detection
   const [activeTab, setActiveTab] = useState(defaultTab);
   const { 
     sites, 
@@ -17,12 +20,68 @@ function Dashboard({ defaultTab = 0 }) {
     activeAlarms, 
     last24HoursData, 
     statistics,
-    // loading is not currently used directly in render, but kept for future use
     fetchAllData,
-    acknowledgeAlarm
+    acknowledgeAlarm,
+    loading
   } = useData();
   
+  const { currentUser, canAccessSite } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
+  const initialLoadComplete = useRef(false);
+  
+  // Re-fetch data only on initial mount or manual refresh
+  useEffect(() => {
+    // Only fetch on initial mount
+    if (!initialLoadComplete.current) {
+      console.log("Dashboard: Initial data fetch");
+      fetchAllData();
+      initialLoadComplete.current = true;
+    }
+  }, [fetchAllData]); // Remove location.pathname from dependencies
+  
+  // Filter sites based on user permissions
+  const visibleSites = sites.filter(site => {
+    console.log("Filtering site:", site.name);
+    console.log("Current user:", currentUser);
+    
+    // If admin or supervisor, show all sites
+    if (currentUser?.role === 'administrator' || currentUser?.role === 'supervisor') {
+      console.log("User is admin/supervisor, showing site");
+      return true;
+    }
+    
+    // For agents, only show sites they have access to
+    const hasAccess = currentUser?.sites?.includes(site.name);
+    console.log(`Agent access check for ${site.name}: ${hasAccess}`);
+    return hasAccess;
+  });
+
+  console.log("Total sites:", sites.length);
+  console.log("Visible sites:", visibleSites.length);
+  console.log("Visible site names:", visibleSites.map(s => s.name));
+
+  // Update statistics to match visible sites
+  const [filteredStatistics, setFilteredStatistics] = useState(statistics);
+  
+  useEffect(() => {
+    // If user is agent, recalculate statistics based on visible sites
+    if (currentUser?.role === 'agent') {
+      const filteredAlarms = alarms.filter(alarm => 
+        visibleSites.some(site => alarm.siteId === site.name)
+      );
+      
+      const newStats = {
+        critical: filteredAlarms.filter(a => a.status === 'CRITICAL').length,
+        major: filteredAlarms.filter(a => a.status === 'MAJOR').length,
+        warning: filteredAlarms.filter(a => a.status === 'WARNING').length,
+        ok: filteredAlarms.filter(a => a.status === 'OK').length
+      };
+      
+      setFilteredStatistics(newStats);
+    } else {
+      setFilteredStatistics(statistics);
+    }
+  }, [statistics, alarms, visibleSites, currentUser]);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -33,6 +92,14 @@ function Dashboard({ defaultTab = 0 }) {
     await fetchAllData();
     setRefreshing(false);
   };
+  
+  if (loading && sites.length === 0) {
+    return (
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -58,7 +125,7 @@ function Dashboard({ defaultTab = 0 }) {
               Alarmes Critiques
             </Typography>
             <Typography component="p" variant="h4">
-              {statistics.critical}
+              {filteredStatistics.critical}
             </Typography>
           </Paper>
         </Grid>
@@ -68,7 +135,7 @@ function Dashboard({ defaultTab = 0 }) {
               Alarmes Majeures
             </Typography>
             <Typography component="p" variant="h4">
-              {statistics.major}
+              {filteredStatistics.major}
             </Typography>
           </Paper>
         </Grid>
@@ -78,7 +145,7 @@ function Dashboard({ defaultTab = 0 }) {
               Alarmes Warning
             </Typography>
             <Typography component="p" variant="h4">
-              {statistics.warning}
+              {filteredStatistics.warning}
             </Typography>
           </Paper>
         </Grid>
@@ -88,7 +155,7 @@ function Dashboard({ defaultTab = 0 }) {
               Sites Surveillés
             </Typography>
             <Typography component="p" variant="h4">
-              {sites.length}
+              {visibleSites.length}
             </Typography>
           </Paper>
         </Grid>
@@ -127,7 +194,16 @@ function Dashboard({ defaultTab = 0 }) {
                 <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
                   Alarmes Récentes
                 </Typography>
-                <AlarmTable alarms={alarms.slice(0, 10)} />
+                {/* Filter alarms by accessible sites for agents */}
+                <AlarmTable 
+                  alarms={
+                    currentUser?.role === 'agent' 
+                      ? alarms.filter(alarm => 
+                          visibleSites.some(site => alarm.siteId === site.name)
+                        ).slice(0, 10)
+                      : alarms.slice(0, 10)
+                  } 
+                />
               </Box>
             )}
             
@@ -135,7 +211,13 @@ function Dashboard({ defaultTab = 0 }) {
             {activeTab === 1 && (
               <Box sx={{ p: 3 }}>
                 <AlarmTable 
-                  alarms={activeAlarms} 
+                  alarms={
+                    currentUser?.role === 'agent' 
+                      ? activeAlarms.filter(alarm => 
+                          visibleSites.some(site => alarm.siteId === site.name)
+                        )
+                      : activeAlarms
+                  } 
                   showAcknowledge={true}
                   onAcknowledge={acknowledgeAlarm}  
                 />
@@ -149,7 +231,7 @@ function Dashboard({ defaultTab = 0 }) {
                   Distribution des Alarmes par Site
                 </Typography>
                 <Grid container spacing={3}>
-                  {sites.map(site => (
+                  {visibleSites.map(site => (
                     <Grid item xs={12} md={4} key={site.id}>
                       <Card>
                         <CardContent>
@@ -179,13 +261,26 @@ function Dashboard({ defaultTab = 0 }) {
             {/* Sites tab */}
             {activeTab === 3 && (
               <Box sx={{ p: 3 }}>
-                <Grid container spacing={3}>
-                  {sites.map(site => (
-                    <Grid item xs={12} md={6} lg={4} key={site.id}>
-                      <SiteOverview site={site} />
-                    </Grid>
-                  ))}
-                </Grid>
+                {visibleSites.length > 0 ? (
+                  <Grid container spacing={3}>
+                    {visibleSites.map(site => (
+                      <Grid item xs={12} md={6} lg={4} key={site.id || site._id}>
+                        <SiteOverview site={site} />
+                      </Grid>
+                    ))}
+                  </Grid>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography variant="h6" color="text.secondary">
+                      Aucun site à afficher
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      {currentUser?.role === 'agent' ? 
+                        "Vous n'avez pas de sites assignés à votre compte." : 
+                        "Aucun site n'a été configuré dans le système."}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
             )}
           </Paper>

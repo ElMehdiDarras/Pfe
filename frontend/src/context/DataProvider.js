@@ -1,10 +1,9 @@
 // src/context/DataProvider.js
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import io from 'socket.io-client';
 import mongoDBService from "../services/MongoDBService";
 
 // Update this to port 5001 where your backend is running
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001';
 
 const DataContext = createContext();
@@ -23,10 +22,18 @@ export function DataProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Fetch all initial data using MongoDB service
-  const fetchAllData = useCallback(async () => {
-    setLoading(true);
+  // Track if initial data has been loaded
+  const initialDataLoaded = useRef(false);
+  
+  // Fetch all data function - now uses the ref to prevent infinite loops
+  const fetchAllData = useCallback(async (force = false) => {
+    // Only set loading to true if this is the initial load or a forced refresh
+    if (!initialDataLoaded.current || force) {
+      setLoading(true);
+    }
+    
     try {
+      console.log('Fetching all data from MongoDB API');
       // Use the mongoDbService instead of direct fetch calls
       const data = await mongoDBService.fetchAllData();
       
@@ -37,6 +44,8 @@ export function DataProvider({ children }) {
       setLast24HoursData(data.last24HoursData);
       
       setError(null);
+      // Mark that initial data has been loaded
+      initialDataLoaded.current = true;
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err.message);
@@ -44,10 +53,18 @@ export function DataProvider({ children }) {
       setLoading(false);
     }
   }, []);
+  
+  // Socket setup reference to prevent recreating
+  const socketRef = useRef(null);
 
-  // Socket.IO connection
+  // Socket.IO connection - only set up once
   useEffect(() => {
+    // Only set up socket once
+    if (socketRef.current) return;
+    
+    console.log('Setting up socket connection');
     const newSocket = io(SOCKET_URL);
+    socketRef.current = newSocket;
 
     newSocket.on('connect', () => {
       console.log('Connected to WebSocket server');
@@ -60,27 +77,51 @@ export function DataProvider({ children }) {
     newSocket.on('alarm-status-change', (data) => {
       console.log('Received alarm status change:', data);
       // Update alarms when receiving real-time updates
-      fetchAllData();
+      fetchAllData(true);
     });
 
     newSocket.on('alarm-acknowledged', (data) => {
       console.log('Alarm acknowledged:', data);
       // Update alarms when an alarm is acknowledged
-      fetchAllData();
+      fetchAllData(true);
     });
 
     return () => {
-      newSocket.disconnect();
+      // Clean up socket only when component unmounts
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
-  }, [fetchAllData]);
+  }, [fetchAllData]); // Empty dependency array - this runs only once
+
+  // Initial data load - only once
+  // eslint-disable-next-line
+  useEffect(() => {
+    // Only fetch initial data once
+    if (!initialDataLoaded.current) {
+      console.log('Initial data load');
+      fetchAllData();
+    }
+  }, [fetchAllData]); // Empty dependency array, run only once on mount
 
   // These methods are now using the mongoDbService
   const fetchSiteAlarms = async (siteId) => {
-    return await mongoDBService.fetchSiteAlarms(siteId);
+    try {
+      return await mongoDBService.fetchSiteAlarms(siteId);
+    } catch (error) {
+      console.error(`Error fetching alarms for site ${siteId}:`, error);
+      return [];
+    }
   };
 
   const fetchFilteredAlarms = async (filters) => {
-    return await mongoDBService.fetchFilteredAlarms(filters);
+    try {
+      return await mongoDBService.fetchFilteredAlarms(filters);
+    } catch (error) {
+      console.error('Error fetching filtered alarms:', error);
+      return [];
+    }
   };
 
   const acknowledgeAlarm = async (alarmId) => {
@@ -99,11 +140,6 @@ export function DataProvider({ children }) {
       return false;
     }
   };
-
-  // Load initial data
-  useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
 
   return (
     <DataContext.Provider

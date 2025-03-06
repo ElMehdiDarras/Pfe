@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useData } from '../context/DataProvider';
+import { useAuth } from '../context/AuthContext';
 
 // Fix for the marker icon issue in React-Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -44,6 +45,7 @@ const greenIcon = new L.Icon({
 
 function MapsView() {
   const { sites, loading } = useData();
+  const { currentUser, canAccessSite } = useAuth();
   
   console.log('MapsView: Rendering with sites:', sites);
   
@@ -55,15 +57,26 @@ function MapsView() {
     );
   }
 
-  // Define marker locations based on site data
-  const markers = sites.map(site => {
+  // Filter sites based on user permissions
+  const visibleSites = sites.filter(site => {
+    // If admin or supervisor, show all sites
+    if (currentUser?.role === 'administrator' || currentUser?.role === 'supervisor') {
+      return true;
+    }
+    
+    // For agents, only show sites they have access to
+    return canAccessSite(site.name);
+  });
+
+  // Define marker locations based on filtered site data
+  const markers = visibleSites.map(site => {
     // Define positions (these are approximate for demonstration)
     let position;
     if (site.name === 'Rabat-Soekarno') {
       position = [34.01, -6.84];
-    } else if (site.name === 'Rabat-Hay NAHDA') {
+    } else if (site.name === 'Rabat-Hay-NAHDA') {
       position = [34.02, -6.81];
-    } else if (site.name === 'Casa-Nations Unies') {
+    } else if (site.name === 'Casa-Nations-Unies') {
       position = [33.59, -7.62];
     } else {
       // Default position if site is unknown
@@ -151,7 +164,7 @@ function MapsView() {
       </Typography>
       
       <Grid container spacing={3}>
-        {sites.map((site) => {
+        {visibleSites.map((site) => {
           // Set status based on site name
           const isOk = site.status === 'OK';
           const isCritical = site.status === 'CRITICAL';

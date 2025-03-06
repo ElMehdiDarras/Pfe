@@ -1,30 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
   Container, Typography, Paper, Box, Tabs, Tab,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Chip, CircularProgress 
+  Chip, CircularProgress, Button
 } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { useData } from '../context/DataProvider';
+import { useAuth } from '../context/AuthContext';
 import AlarmTable from './AlarmTable';
 
 function MonitoringView() {
+  const location = useLocation(); // Get location for route change detection
   const [activeTab, setActiveTab] = useState(0);
-  const { sites, activeAlarms, loading, acknowledgeAlarm } = useData();
+  const { sites, activeAlarms, loading, acknowledgeAlarm, fetchAllData } = useData();
+  const { currentUser } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
+  const initialLoadComplete = useRef(false);
   
+  // Re-fetch data only on initial mount or manual refresh
+  useEffect(() => {
+    // Only fetch on initial mount
+    if (!initialLoadComplete.current) {
+      console.log("MonitoringView: Initial data fetch");
+      fetchAllData();
+      initialLoadComplete.current = true;
+    }
+  }, [fetchAllData]); // Remove location.pathname from dependencies
+
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
   };
   
-  // Create lists of equipment from all sites
-  const allBoxes = sites.flatMap(site => 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchAllData();
+    setRefreshing(false);
+  };
+  
+  // Filter sites based on user permissions
+  const visibleSites = currentUser?.role === 'agent'
+    ? sites.filter(site => 
+        currentUser.sites?.includes(site.name) || 
+        currentUser.sites?.includes(site.id))
+    : sites;
+  
+  // Create lists of equipment from visible sites
+  const allBoxes = visibleSites.flatMap(site => 
     (site.boxes || []).map(box => ({...box, site: site.name}))
   );
   
-  const allEquipment = sites.flatMap(site => 
+  const allEquipment = visibleSites.flatMap(site => 
     (site.equipment || []).map(equip => ({...equip, site: site.name}))
   );
+  
+  // Filter active alarms for agent users
+  const visibleAlarms = currentUser?.role === 'agent'
+    ? activeAlarms.filter(alarm => 
+        visibleSites.some(site => 
+          alarm.siteId === site.name || 
+          alarm.siteId === site.id))
+    : activeAlarms;
 
-  if (loading) {
+  if (loading && sites.length === 0) {
     return (
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
         <CircularProgress />
@@ -34,9 +72,19 @@ function MonitoringView() {
   
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom component="div">
-        Monitoring
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h4" gutterBottom component="div">
+          Monitoring
+        </Typography>
+        <Button 
+          variant="outlined" 
+          startIcon={refreshing ? <CircularProgress size={20} /> : <RefreshIcon />}
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          {refreshing ? 'Rafraîchissement...' : 'Rafraîchir'}
+        </Button>
+      </Box>
       
       <Paper sx={{ width: '100%', mb: 4 }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -65,7 +113,7 @@ function MonitoringView() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {sites.map((site) => (
+                  {visibleSites.map((site) => (
                     <TableRow key={site.id}>
                       <TableCell>{site.name}</TableCell>
                       <TableCell>{site.ipRange && site.ipRange.split('/')[0]}</TableCell>
@@ -102,7 +150,7 @@ function MonitoringView() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {sites.map((site) => (
+                  {visibleSites.map((site) => (
                     <React.Fragment key={site.id}>
                       <TableRow>
                         <TableCell rowSpan={3}>{site.name}</TableCell>
@@ -154,7 +202,7 @@ function MonitoringView() {
                 </TableHead>
                 <TableBody>
                   {allBoxes.map((box, index) => (
-                    <TableRow key={index}>
+                    <TableRow key={box.id || index}>
                       <TableCell>{box.name}</TableCell>
                       <TableCell>{box.ip}</TableCell>
                       <TableCell>
@@ -193,7 +241,7 @@ function MonitoringView() {
                 <TableBody>
                   {allEquipment.map((equip, index) => {
                     return (
-                      <TableRow key={index}>
+                      <TableRow key={equip.id || index}>
                         <TableCell>{equip.name}</TableCell>
                         <TableCell>PIN_{String(index).padStart(2, '0')}</TableCell>
                         <TableCell>
@@ -230,7 +278,7 @@ function MonitoringView() {
               Problèmes Actifs
             </Typography>
             <AlarmTable 
-              alarms={activeAlarms} 
+              alarms={visibleAlarms} 
               showAcknowledge={true} 
               onAcknowledge={acknowledgeAlarm}
             />

@@ -1,34 +1,82 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, Typography, Grid, Box, Chip } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 
 function SiteOverview({ site }) {
-  const navigate = useNavigate();
+  // Add defensive check at the beginning
+  if (!site) {
+    console.error('SiteOverview received undefined or null site object');
+    return null;
+  }
+
+  console.log('Rendering SiteOverview for site:', site);
   
+  // Handle click on site card - use direct browser navigation
   const handleClick = () => {
-    navigate(`/sites/${site.id}`);
+    console.log('Site clicked:', site);
+    
+    // Debug site identifiers
+    console.log('Site identifiers:', {
+      id: site.id,
+      _id: site._id,
+      name: site.name
+    });
+    
+    // Get the most reliable identifier for site navigation
+    let siteIdForUrl;
+    
+    // First try MongoDB _id (if available)
+    if (site._id) {
+      siteIdForUrl = site._id;
+    }
+    // Then try regular id
+    else if (site.id) {
+      siteIdForUrl = site.id;
+    }
+    // Finally, fall back to name with URL-safe formatting
+    else if (site.name) {
+      siteIdForUrl = site.name.replace(/\s+/g, '-');
+    } else {
+      console.error('No valid identifier found for site:', site);
+      return;
+    }
+    
+    console.log('Using site identifier for URL:', siteIdForUrl);
+    
+    // Use direct browser navigation to ensure it works
+    window.location.href = `/sites/${siteIdForUrl}`;
   };
+  
+  // Set default values for missing properties
+  const siteName = site.name || 'Site sans nom';
+  const siteVlan = site.vlan || 'N/A';
+  const siteDescription = site.description || `Site ${siteName}`;
+  const siteLocation = site.location || 'Emplacement non spécifié';
+  const siteIpRange = site.ipRange || 'N/A';
+  const siteStatus = site.status || 'OK';
+  const activeAlarms = site.activeAlarms || 0;
+  const boxes = site.boxes || [];
+  const equipment = site.equipment || [];
   
   return (
     <Card onClick={handleClick} sx={{ cursor: 'pointer', height: '100%' }}>
       <CardHeader
-        title={site.name}
-        subheader={`VLAN: ${site.vlan}`}
+        title={siteName}
+        subheader={`VLAN: ${siteVlan}`}
         action={
           <Box sx={{ mt: 1 }}>
-            {site.status === 'OK' ? (
+            {siteStatus === 'OK' ? (
               <Chip label="OK" color="success" size="small" />
-            ) : site.status === 'WARNING' ? (
-              <Chip label={`${site.activeAlarms} Alarmes`} color="warning" size="small" />
+            ) : siteStatus === 'WARNING' ? (
+              <Chip label={`${activeAlarms} Alarmes`} color="warning" size="small" />
             ) : (
-              <Chip label={`${site.activeAlarms} Alarmes`} color="error" size="small" />
+              <Chip label={`${activeAlarms} Alarmes`} color="error" size="small" />
             )}
           </Box>
         }
       />
       <CardContent>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          {site.description}
+          {siteDescription}
         </Typography>
         
         <Grid container spacing={1} sx={{ mt: 1 }}>
@@ -37,7 +85,7 @@ function SiteOverview({ site }) {
               Emplacement:
             </Typography>
             <Typography variant="body2">
-              {site.location}
+              {siteLocation}
             </Typography>
           </Grid>
           <Grid item xs={6}>
@@ -45,7 +93,7 @@ function SiteOverview({ site }) {
               Plage IP:
             </Typography>
             <Typography variant="body2">
-              {site.ipRange}
+              {siteIpRange}
             </Typography>
           </Grid>
           <Grid item xs={12} sx={{ mt: 1 }}>
@@ -53,7 +101,7 @@ function SiteOverview({ site }) {
               Équipement:
             </Typography>
             <Typography variant="body2">
-              {`${site.boxes?.length || 0} Boxes, ${site.equipment?.length || 0} Équipements`}
+              {`${boxes.length || 0} Boxes, ${equipment.length || 0} Équipements`}
             </Typography>
           </Grid>
         </Grid>

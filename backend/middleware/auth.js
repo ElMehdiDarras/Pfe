@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const Site = require('../models/sites');
 const User = require('../models/users');
 
 // Middleware to authenticate users via JWT
@@ -62,37 +63,47 @@ const isSupervisorOrAdmin = (req, res, next) => {
   next();
 };
 
-// Middleware to check if user has access to a specific site
-const hasSiteAccess = (req, res, next) => {
-  // Get site ID from request params or query
-  const siteId = req.params.id || req.params.siteId || req.query.siteId;
-  
-  if (!siteId) {
-    return next(); // No site specified, continue
+// Modify hasSiteAccess to handle name variations
+const hasSiteAccess = async (req, res, next) => {
+  try {
+    if (!req.params.siteId) {
+      return next();
+    }
+    
+    if (req.user.role === 'administrator' || req.user.role === 'supervisor') {
+      return next();
+    }
+    
+    if (req.user.role === 'agent' && req.user.sites) {
+      try {
+        const site = await Site.findById(req.params.siteId);
+        
+        if (!site) {
+          // If site not found by ID, it might be a name - continue to other middleware
+          return next();
+        }
+        
+        // Normalize names for comparison
+        const normalizedSiteName = site.name.replace(/[\s-]/g, '').toLowerCase();
+        const hasAccess = req.user.sites.some(userSite => {
+          const normalizedUserSite = userSite.replace(/[\s-]/g, '').toLowerCase();
+          return normalizedSiteName === normalizedUserSite;
+        });
+        
+        if (!hasAccess) {
+          return res.status(403).json({ error: 'You do not have access to this site' });
+        }
+      } catch (error) {
+        // Continue if there's an error - might not be an ObjectId
+        return next();
+      }
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Site access check error:', error);
+    return res.status(500).json({ error: 'Error checking site access' });
   }
-  
-  // Supervisors and administrators have access to all sites
-  if (req.user.role === 'supervisor' || req.user.role === 'administrator') {
-    return next();
-  }
-  
-  // For agents, check site access
-  // Note: siteId might be a MongoDB ObjectId or a site name, handle both cases
-  let siteName;
-  if (siteId.match(/^[0-9a-fA-F]{24}$/)) {
-    // This is a MongoDB ObjectId, need to look up the site
-    // This part would need to be adjusted based on how you store site IDs
-    // For example, if you're passing the site name directly:
-    siteName = siteId.replace(/-/g, ' ');
-  } else {
-    siteName = siteId;
-  }
-  
-  if (!req.user.sites.includes(siteName)) {
-    return res.status(403).json({ error: 'You do not have access to this site' });
-  }
-  
-  next();
 };
 
 module.exports = {

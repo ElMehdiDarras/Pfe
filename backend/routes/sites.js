@@ -132,6 +132,15 @@ router.get('/name/:name', async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve site' });
   }
 });
+// Add to your routes/sites.js file on the backend
+router.get('/debug-ids', auth, async (req, res) => {
+  try {
+    const sites = await Site.find({}).select('_id id name');
+    res.json(sites);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Create a new site
 router.post('/', async (req, res) => {

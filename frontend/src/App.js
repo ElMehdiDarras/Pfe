@@ -1,32 +1,36 @@
-// src/App.js
+// src/App.tsx or App.jsx (depending on your file extension)
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { CircularProgress, Box, Alert } from '@mui/material';
 
-// Import components
-import Navigation from './components/Navigation';
-import Dashboard from './components/Dashboard';
-import MonitoringView from './components/MonitoringView';
-import ConfigurationView from './components/ConfigurationView';
-import StatisticsView from './components/StatisticsView';
-import MapsView from './components/MapsView';
-import HistoryView from './components/HistoryView';
-import SiteDetail from './components/SiteDetail';
-import LocalDashboard from './components/LocalDashboard';
-import Login from './components/Login';
-import Logout from './components/Logout';
-import UserProfile from './components/UserProfile';
-import Unauthorized from './components/Unauthorized';
-
-// Import Route guards
-import { PrivateRoute, RoleRoute, SiteRoute } from './components/PrivateRoutes';
+// Context Providers
 import { AuthProvider } from './context/AuthContext';
-// Import Providers
-import { DataProvider, useData } from './context/DataProvider';
+import { SocketProvider } from './context/SocketContext';
 
-// Create theme
+// Route Protection Components
+import { ProtectedRoute } from './routes/ProtectedRoute';
+import { SiteRoute } from './routes/SiteRoute';
+
+// Layout
+import MainLayout from './components/layout/MainLayout';
+
+// Pages
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Monitoring from './pages/Monitoring';
+import SiteDetail from './pages/SiteDetail';
+import Statistics from './pages/Statistics';
+import Configuration from './pages/Configuration';
+import UserManagement from './pages/UserManagement';
+import Profile from './pages/Profile';
+import Unauthorized from './pages/Unauthorized';
+import NotFound from './pages/NotFound';
+import Historique from './pages/Historique';
+import Cartes from './pages/Cartes';
+
+// Create a theme
 const theme = createTheme({
   palette: {
     primary: {
@@ -35,103 +39,120 @@ const theme = createTheme({
     secondary: {
       main: '#dc004e',
     },
+    background: {
+      default: '#f5f5f5',
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 500,
+    },
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
+          borderRadius: '8px',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: '6px',
+          textTransform: 'none',
+        },
+      },
+    },
   },
 });
 
-// Loading component
-const LoadingScreen = () => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-    <CircularProgress size={60} />
-  </Box>
-);
+// Create a React Query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: true,
+      staleTime: 30000,
+      gcTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
-// Error display component
-const ErrorScreen = ({ message }) => (
-  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-    <Alert severity="error" sx={{ maxWidth: 600 }}>
-      {message || 'An error occurred while loading data. Please try again later.'}
-    </Alert>
-  </Box>
-);
-
-// Main App content with routes
-const AppContent = () => {
-  const { loading, error } = useData();
-  
-  if (loading) {
-    return <LoadingScreen />;
-  }
-  
-  if (error) {
-    return <ErrorScreen message={error} />;
-  }
-  
-  return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/logout" element={<Logout />} />
-      <Route path="/unauthorized" element={<Unauthorized />} />
-      
-      {/* Protected routes - require authentication */}
-      <Route element={<PrivateRoute />}>
-        <Route path="/" element={<Navigate to="/overview" replace />} />
-        <Route path="/overview" element={<Dashboard />} />
-        <Route path="/monitoring" element={<MonitoringView />} />
-        <Route path="/profile" element={<UserProfile />} />
-        
-        {/* Site routes - require site access */}
-        <Route element={<SiteRoute />}>
-          <Route path="/sites/:siteId" element={<SiteDetail />} />
-          <Route path="/local/:siteId" element={<LocalDashboard />} />
-        </Route>
-        
-        {/* Admin/Supervisor only routes */}
-        <Route element={<RoleRoute allowedRoles={['administrator', 'supervisor']} />}>
-          <Route path="/statistique" element={<StatisticsView />} />
-          <Route path="/cartes" element={<MapsView />} />
-          <Route path="/historique" element={<HistoryView />} />
-        </Route>
-        
-        {/* Admin only routes */}
-        <Route element={<RoleRoute allowedRoles={['administrator']} />}>
-          <Route path="/configuration" element={<ConfigurationView />} />
-        </Route>
-      </Route>
-      
-      {/* Catch all - redirect to dashboard or login */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-};
-
-// Main App component
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <DataProvider>
-          <Router>
-            <AppRoutes />
-          </Router>
-        </DataProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <AuthProvider>
+          <SocketProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<Login />} />
+                
+                {/* Protected routes - require authentication */}
+                <Route element={<ProtectedRoute />}>
+                  {/* Main layout wrapper for authenticated pages */}
+                  <Route element={<MainLayout />}>
+                    {/* Dashboard */}
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                    
+                    {/* Always accessible to authenticated users */}
+                    <Route path="/monitoring" element={<Monitoring />} />
+                    <Route path="/profile" element={<Profile />} />
+                    
+                    {/* Routes requiring specific permissions */}
+                    <Route path="/statistics" element={
+                      <ProtectedRoute requiredPermission="VIEW_STATISTICS">
+                        <Statistics />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/configuration" element={
+                      <ProtectedRoute requiredPermission="VIEW_CONFIGURATION">
+                        <Configuration />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/cartes" element={
+                      <ProtectedRoute requiredPermission="VIEW_CARTES">
+                        <Cartes />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/historique" element={
+                      <ProtectedRoute requiredPermission="VIEW_HISTORIQUE">
+                        <Historique />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/users" element={
+                      <ProtectedRoute requiredPermission="MANAGE_USERS">
+                        <UserManagement />
+                      </ProtectedRoute>
+                    } />
+                    
+                    {/* Site-specific routes with additional access control */}
+                    <Route element={<SiteRoute />}>
+                      <Route path="/sites/:siteId" element={<SiteDetail />} />
+                    </Route>
+                    
+                    {/* Error and utility pages */}
+                    <Route path="/unauthorized" element={<Unauthorized />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Route>
+                </Route>
+              </Routes>
+            </BrowserRouter>
+          </SocketProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
-
-// Component to conditionally render navigation
-const AppRoutes = () => {
-  const location = window.location;
-  const isLoginPage = location.pathname === '/login';
-  
-  return (
-    <>
-      {!isLoginPage && <Navigation />}
-      <AppContent />
-    </>
-  );
-};
 
 export default App;

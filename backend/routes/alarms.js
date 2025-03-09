@@ -61,13 +61,23 @@ router.get('/active', async (req, res) => {
 });
 
 // Get alarms by site
+// In routes/alarms.js, modify the site route
 router.get('/site/:siteId', async (req, res) => {
   try {
     const siteName = req.params.siteId.replace(/-/g, ' ');
     
     // Check if agent has access to this site
-    if (req.user.role === 'agent' && !req.user.sites.includes(siteName)) {
-      return res.status(403).json({ error: 'You do not have access to this site' });
+    if (req.user.role === 'agent') {
+      // Normalize site names for comparison
+      const normalizedSiteName = siteName.replace(/[\s-]/g, '').toLowerCase();
+      const hasAccess = req.user.sites.some(userSite => {
+        const normalizedUserSite = userSite.replace(/[\s-]/g, '').toLowerCase();
+        return normalizedSiteName === normalizedUserSite;
+      });
+      
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'You do not have access to this site' });
+      }
     }
     
     const alarms = await Alarm.getAlarmsBySite(siteName);

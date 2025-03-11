@@ -1,5 +1,5 @@
 // src/pages/Cartes.jsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Typography,
   Box,
@@ -14,116 +14,194 @@ import {
   Alert
 } from '@mui/material';
 import { useSites } from '../hooks/useSites';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
-// Mock map component - in a real application, you would use a proper mapping library
+// Fix the marker icon issue in Leaflet with webpack
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Custom colored marker icon
+const createColoredMarker = (color) => {
+  return L.divIcon({
+    className: 'custom-map-marker',
+    html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
+  });
+};
+
+// Map component
 const MapComponent = ({ sites }) => {
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const markersRef = useRef([]);
+
+  useEffect(() => {
+    if (!mapRef.current || !sites || sites.length === 0) return;
+
+    // Initialize map if it doesn't exist
+    if (!mapInstance.current) {
+      mapInstance.current = L.map(mapRef.current).setView([31.794, -7.09], 6); // Center on Morocco
+
+      // Add OpenStreetMap tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(mapInstance.current);
+    }
+
+    // Clear previous markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Generate mock coordinates for sites if not provided
+    const sitesWithCoordinates = sites.map((site, index) => {
+      if (site.coordinates?.latitude && site.coordinates?.longitude) {
+        return site;
+      }
+      
+      // Use predefined coordinates for specific cities or generate mock ones
+      let coordinates;
+      
+      if (site.name.includes('Rabat')) {
+        coordinates = { latitude: 34.022405, longitude: -6.834543 };
+      } else if (site.name.includes('Casa')) {
+        coordinates = { latitude: 33.572422, longitude: -7.590944 };
+      } else if (site.name.includes('Fes')) {
+        coordinates = { latitude: 34.033333, longitude: -5.000000 };
+      } else if (site.name.includes('Meknes')) {
+        coordinates = { latitude: 33.895000, longitude: -5.554722 };
+      } else if (site.name.includes('Tanger')) {
+        coordinates = { latitude: 35.777222, longitude: -5.803889 };
+      } else if (site.name.includes('Marrakech')) {
+        coordinates = { latitude: 31.631794, longitude: -8.008889 };
+      } else {
+        // Generate random coordinates in Morocco if city not recognized
+        coordinates = {
+          latitude: 31.794 + (Math.random() - 0.5) * 5,
+          longitude: -7.09 + (Math.random() - 0.5) * 5
+        };
+      }
+      
+      return { ...site, coordinates };
+    });
+
+    // Add markers for each site
+    sitesWithCoordinates.forEach((site, index) => {
+      const { coordinates } = site;
+      if (!coordinates) return;
+      
+      // Determine marker color based on site status
+      let markerColor;
+      switch (site.status) {
+        case 'CRITICAL':
+          markerColor = '#f44336';
+          break;
+        case 'MAJOR':
+          markerColor = '#ff9800';
+          break;
+        case 'WARNING':
+          markerColor = '#ffeb3b';
+          break;
+        default:
+          markerColor = '#4caf50'; // OK status
+      }
+
+      const marker = L.marker([coordinates.latitude, coordinates.longitude], {
+        icon: createColoredMarker(markerColor),
+        title: site.name
+      }).addTo(mapInstance.current);
+
+      // Add popup with site information
+      marker.bindPopup(
+        `<div style="min-width: 200px;">
+          <h3>${site.name}</h3>
+          <p><strong>Statut:</strong> ${site.status || 'OK'}</p>
+          <p><strong>Alarmes actives:</strong> ${site.activeAlarms || 0}</p>
+          <p><strong>Emplacement:</strong> ${site.location || 'N/A'}</p>
+        </div>`
+      );
+
+      // Add pulse effect for sites with active alarms
+      if (site.activeAlarms > 0) {
+        const pulseCircle = L.circleMarker([coordinates.latitude, coordinates.longitude], {
+          radius: 15,
+          color: markerColor,
+          fillColor: markerColor,
+          fillOpacity: 0.3,
+          weight: 1,
+          className: 'pulse-circle'
+        }).addTo(mapInstance.current);
+        
+        markersRef.current.push(pulseCircle);
+      }
+
+      markersRef.current.push(marker);
+    });
+
+    // Add CSS for pulse animation
+    if (!document.getElementById('pulse-animation-style')) {
+      const style = document.createElement('style');
+      style.id = 'pulse-animation-style';
+      style.textContent = `
+        @keyframes pulse {
+          0% {
+            transform: scale(0.5);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+        }
+        .pulse-circle {
+          animation: pulse 1.5s infinite;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Make sure map is properly sized
+    setTimeout(() => {
+      if (mapInstance.current) {
+        mapInstance.current.invalidateSize();
+      }
+    }, 100);
+
+    // Cleanup function
+    return () => {
+      if (mapInstance.current) {
+        // Just clear markers, don't remove the map
+        markersRef.current.forEach(marker => marker.remove());
+        markersRef.current = [];
+      }
+    };
+  }, [sites]);
+
   return (
     <Box 
+      ref={mapRef}
       sx={{ 
         height: '500px', 
-        backgroundColor: '#e8f4f8', 
+        width: '100%',
         borderRadius: 1,
         position: 'relative',
         overflow: 'hidden'
       }}
-    >
-      {/* Mock map - in a real implementation, you would use a proper map library */}
-      <Box
-        component="img"
-        src="https://via.placeholder.com/1200x500?text=Map+of+Morocco"
-        alt="Map"
-        sx={{ 
-          width: '100%', 
-          height: '100%', 
-          objectFit: 'cover',
-          objectPosition: 'center'
-        }}
-      />
-
-      {/* Mock site markers */}
-      {sites.map((site, index) => {
-        // Position markers in different locations (this is just a mock)
-        const left = 20 + (index * 30) % 80;
-        const top = 20 + (index * 25) % 70;
-        
-        const getMarkerColor = () => {
-          if (site.status === 'CRITICAL') return '#f44336';
-          if (site.status === 'MAJOR') return '#ff9800';
-          if (site.status === 'WARNING') return '#ffeb3b';
-          return '#4caf50'; // OK status
-        };
-
-        return (
-          <Box
-            key={site.id}
-            sx={{
-              position: 'absolute',
-              left: `${left}%`,
-              top: `${top}%`,
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              backgroundColor: getMarkerColor(),
-              border: '2px solid white',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-              zIndex: 10,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: 14,
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                width: 20,
-                height: 20,
-                borderRadius: '50%',
-                backgroundColor: 'rgba(255,255,255,0.3)',
-                animation: site.activeAlarms > 0 ? 'pulse 1.5s infinite' : 'none',
-              },
-              '@keyframes pulse': {
-                '0%': {
-                  transform: 'scale(1)',
-                  opacity: 1
-                },
-                '100%': {
-                  transform: 'scale(2.5)',
-                  opacity: 0
-                }
-              }
-            }}
-            title={site.name}
-          >
-            {index + 1}
-          </Box>
-        );
-      })}
-
-      {/* Attribution */}
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: 5,
-          right: 5,
-          fontSize: '0.7rem',
-          color: '#333',
-          bgcolor: 'rgba(255,255,255,0.7)',
-          padding: '2px 5px',
-          borderRadius: 1
-        }}
-      >
-        © Leaflet | © OpenStreetMap contributors
-      </Box>
-    </Box>
+    />
   );
 };
 
 // Equipment diagram component
 const EquipmentDiagram = ({ site }) => {
   const getEquipmentStatus = (type) => {
-    const equipment = site.equipment?.filter(e => e.type.includes(type)) || [];
+    const equipment = site.equipment?.filter(e => e.type && e.type.includes(type)) || [];
     
     if (equipment.length === 0) return 'OK';
     
@@ -170,7 +248,7 @@ const EquipmentDiagram = ({ site }) => {
     );
   };
 
-  // Use equipment types from your data
+  // Equipment types based on your data model
   const equipmentTypes = ['Armoire électrique', 'Climatiseurs', 'Thermostat'];
   
   const statusCounts = {
@@ -285,7 +363,7 @@ const Cartes = () => {
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {sites?.map((site) => (
-          <Grid item xs={12} sm={6} md={4} key={site.id}>
+          <Grid item xs={12} sm={6} md={4} key={site.id || site._id}>
             <EquipmentDiagram site={site} />
           </Grid>
         ))}

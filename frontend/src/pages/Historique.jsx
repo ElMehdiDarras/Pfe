@@ -19,7 +19,8 @@ import {
   CircularProgress,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  Alert
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
@@ -33,6 +34,7 @@ const Historique = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isFiltered, setIsFiltered] = useState(false);
+  const [filteredData, setFilteredData] = useState([]);
 
   // Fetch data
   const { data: sites, isLoading: sitesLoading } = useSites();
@@ -44,7 +46,11 @@ const Historique = () => {
   const getFilteredAlarms = () => {
     if (!alarms) return [];
     
-    return alarms.filter(alarm => {
+    // Make sure alarms is an array before filtering
+    const alarmsArray = Array.isArray(alarms) ? alarms : 
+                       (alarms.alarms && Array.isArray(alarms.alarms)) ? alarms.alarms : [];
+    
+    return alarmsArray.filter(alarm => {
       // Filter by site
       if (siteFilter && alarm.siteId !== siteFilter) return false;
       
@@ -66,13 +72,11 @@ const Historique = () => {
     });
   };
 
-  // Get filtered alarms
-  const filteredAlarms = isFiltered ? getFilteredAlarms() : alarms || [];
-
   // Apply filters
   const handleApplyFilters = () => {
+    const filtered = getFilteredAlarms();
+    setFilteredData(filtered);
     setIsFiltered(true);
-    refetch();
   };
 
   // Reset filters
@@ -82,6 +86,7 @@ const Historique = () => {
     setStartDate('');
     setEndDate('');
     setIsFiltered(false);
+    setFilteredData([]);
   };
 
   // Export as PDF (mock function)
@@ -105,6 +110,11 @@ const Historique = () => {
     }
   };
 
+  // Get data to display based on filter status
+  const displayData = isFiltered ? filteredData : 
+                    (Array.isArray(alarms) ? alarms : 
+                    (alarms?.alarms && Array.isArray(alarms.alarms)) ? alarms.alarms : []);
+
   return (
     <>
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 'medium' }}>
@@ -126,7 +136,7 @@ const Historique = () => {
               >
                 <MenuItem value="">Tous les sites</MenuItem>
                 {sites?.map((site) => (
-                  <MenuItem key={site.id} value={site.name}>
+                  <MenuItem key={site.id || site._id} value={site.name}>
                     {site.name}
                   </MenuItem>
                 ))}
@@ -203,7 +213,7 @@ const Historique = () => {
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="body2">
-                  Résultats ({filteredAlarms.length} alarmes)
+                  Résultats ({filteredData.length} alarmes)
                 </Typography>
                 <Link
                   component="button"
@@ -240,10 +250,10 @@ const Historique = () => {
                     <CircularProgress size={24} />
                   </TableCell>
                 </TableRow>
-              ) : filteredAlarms.length > 0 ? (
-                filteredAlarms.map((alarm) => (
+              ) : displayData.length > 0 ? (
+                displayData.map((alarm, index) => (
                   <TableRow 
-                    key={alarm.id}
+                    key={alarm.id || alarm._id || index}
                     sx={{ 
                       '&:nth-of-type(even)': { backgroundColor: '#fafafa' },
                       backgroundColor: alarm.status === 'CRITICAL' 

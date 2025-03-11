@@ -23,6 +23,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
+import { hasPermission, PERMISSIONS } from '../../utils/permissions';
 
 const Navbar = ({ onDrawerToggle }) => {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -55,14 +56,50 @@ const Navbar = ({ onDrawerToggle }) => {
     return `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`;
   };
 
-  const navItems = [
-    { label: 'OVERVIEW', icon: <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />, path: '/' },
-    { label: 'MONITORING', icon: <MonitorIcon sx={{ mr: 0.5, fontSize: 20 }} />, path: '/monitoring' },
-    { label: 'CONFIGURATION', icon: <SettingsIcon sx={{ mr: 0.5, fontSize: 20 }} />, path: '/configuration' },
-    { label: 'STATISTIQUE', icon: <BarChartIcon sx={{ mr: 0.5, fontSize: 20 }} />, path: '/statistics' },
-    { label: 'CARTES', icon: <MapIcon sx={{ mr: 0.5, fontSize: 20 }} />, path: '/cartes' },
-    { label: 'HISTORIQUE', icon: <HistoryIcon sx={{ mr: 0.5, fontSize: 20 }} />, path: '/historique' },
+  // Define all available navigation items
+  const allNavItems = [
+    { 
+      label: 'OVERVIEW', 
+      icon: <HomeIcon sx={{ mr: 0.5, fontSize: 20 }} />, 
+      path: '/',
+      requiredPermission: PERMISSIONS.VIEW_DASHBOARD
+    },
+    { 
+      label: 'MONITORING', 
+      icon: <MonitorIcon sx={{ mr: 0.5, fontSize: 20 }} />, 
+      path: '/monitoring',
+      requiredPermission: PERMISSIONS.VIEW_MONITORING
+    },
+    { 
+      label: 'CONFIGURATION', 
+      icon: <SettingsIcon sx={{ mr: 0.5, fontSize: 20 }} />, 
+      path: '/configuration',
+      requiredPermission: PERMISSIONS.VIEW_CONFIGURATION 
+    },
+    { 
+      label: 'STATISTIQUE', 
+      icon: <BarChartIcon sx={{ mr: 0.5, fontSize: 20 }} />, 
+      path: '/statistics',
+      requiredPermission: PERMISSIONS.VIEW_STATISTICS
+    },
+    { 
+      label: 'CARTES', 
+      icon: <MapIcon sx={{ mr: 0.5, fontSize: 20 }} />, 
+      path: '/cartes',
+      requiredPermission: PERMISSIONS.VIEW_CARTES
+    },
+    { 
+      label: 'HISTORIQUE', 
+      icon: <HistoryIcon sx={{ mr: 0.5, fontSize: 20 }} />, 
+      path: '/historique',
+      requiredPermission: PERMISSIONS.VIEW_HISTORIQUE
+    },
   ];
+
+  // Filter navigation items based on user permissions
+  const navItems = allNavItems.filter(item => 
+    !item.requiredPermission || hasPermission(user, item.requiredPermission)
+  );
 
   return (
     <AppBar
@@ -100,7 +137,7 @@ const Navbar = ({ onDrawerToggle }) => {
           AlarmManager
         </Typography>
 
-        {/* Navigation buttons */}
+        {/* Navigation buttons - only display items user has permission to see */}
         <Box 
           sx={{ 
             display: { xs: 'none', md: 'flex' },

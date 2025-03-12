@@ -88,7 +88,6 @@ const Monitoring = () => {
       <Paper sx={{ mb: 3, borderRadius: 1 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
           <Tab label="HOSTS" />
-          <Tab label="SERVICES" />
           <Tab label="BOXES" />
           <Tab label="EQUIPEMENTS" />
           <Tab label="PROBLÈMES" />
@@ -158,7 +157,7 @@ const Monitoring = () => {
           )}
           
           {/* Boxes Tab */}
-          {tabValue === 2 && (
+          {tabValue === 1 && (
             <TableContainer>
               <Table size="small">
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
@@ -212,7 +211,7 @@ const Monitoring = () => {
           )}
           
           {/* Equipment Tab */}
-          {tabValue === 3 && (
+          {tabValue === 2 && (
             <TableContainer>
               <Table size="small">
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
@@ -269,7 +268,7 @@ const Monitoring = () => {
           )}
           
           {/* Problems Tab */}
-          {tabValue === 4 && (
+          {tabValue === 3 && (
             <TableContainer>
               <Table size="small">
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>

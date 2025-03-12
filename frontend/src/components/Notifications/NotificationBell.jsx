@@ -1,176 +1,280 @@
-// src/components/layout/Navbar.jsx
-import React, { useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import {
-  AppBar,
-  Box,
-  Toolbar,
-  Typography,
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  Divider,
+// src/components/NotificationBell.jsx
+import React, { useState, useEffect } from 'react';
+import { 
+  IconButton, 
+  Badge, 
+  Menu, 
+  Typography, 
+  Box, 
+  List, 
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
   Avatar,
+  Button,
+  Divider,
   Tooltip,
-  useMediaQuery,
-  useTheme
+  CircularProgress,
+  Snackbar,
+  Alert
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
-import SettingsIcon from '@mui/icons-material/Settings';
-import { useAuth } from '../../context/AuthContext';
-import NotificationBell from '../notifications/NotificationBell';
+import { useNavigate } from 'react-router-dom';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
+import InfoIcon from '@mui/icons-material/Info';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import alarmService from '/home/mhdi/Desktop/alarm-monitoring-system/frontend/src/api/services/alarmService.js';
+import { useSocket } from '../../context/SocketContext';
 
-const Navbar = ({ onDrawerToggle }) => {
+const NotificationBell = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const queryClient = useQueryClient();
   const [anchorEl, setAnchorEl] = useState(null);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
-  // Handle menu open
-  const handleMenu = (event) => {
+  const open = Boolean(anchorEl);
+  const { lastMessage } = useSocket();
+  const [notification, setNotification] = useState(null);
+
+  // Fetch active alarms
+  const { data: alarms, isLoading, error } = useQuery({
+    queryKey: ['alarms', 'active'],
+    queryFn: alarmService.getActiveAlarms,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  // Mutation for acknowledging alarms
+  const acknowledgeMutation = useMutation({
+    mutationFn: (alarmId) => alarmService.acknowledgeAlarm(alarmId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alarms'] });
+    }
+  });
+
+  // Mutation for acknowledging all alarms
+  const acknowledgeAllMutation = useMutation({
+    mutationFn: () => alarmService.acknowledgeAllAlarms(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alarms'] });
+    }
+  });
+
+  // Listen for socket events
+  useEffect(() => {
+    if (lastMessage?.type === 'alarm-status-change') {
+      // Show notification for critical and major alarms
+      if (['CRITICAL', 'MAJOR'].includes(lastMessage.data.status)) {
+        setNotification({
+          severity: lastMessage.data.status === 'CRITICAL' ? 'error' : 'warning',
+          message: `${lastMessage.data.siteId}: ${lastMessage.data.equipment} - ${lastMessage.data.description}`
+        });
+        
+        // Play sound for critical alarms
+        if (lastMessage.data.status === 'CRITICAL') {
+          const audio = new Audio('/sounds/alarm.mp3');
+          audio.play().catch(err => console.log('Failed to play sound:', err));
+        }
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => setNotification(null), 5000);
+      }
+      
+      // Refresh alarm data
+      queryClient.invalidateQueries({ queryKey: ['alarms'] });
+    }
+  }, [lastMessage, queryClient]);
+
+  const handleOpen = (event) => {
     setAnchorEl(event.currentTarget);
+    // Refresh data when opening the menu
+    queryClient.invalidateQueries({ queryKey: ['alarms', 'active'] });
   };
-  
-  // Handle menu close
+
   const handleClose = () => {
     setAnchorEl(null);
   };
-  
-  // Handle logout
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+
+  const handleAcknowledgeAlarm = (alarmId, event) => {
+    event.stopPropagation();
+    acknowledgeMutation.mutate(alarmId);
   };
-  
-  // Handle profile navigation
-  const handleProfile = () => {
-    navigate('/Profile');
+
+  const handleAcknowledgeAll = () => {
+    acknowledgeAllMutation.mutate();
+  };
+
+  const handleAlarmClick = (siteId) => {
     handleClose();
+    if (siteId) {
+      navigate(`/SiteDetail/${siteId.replace(/\s+/g, '-')}`);
+    }
   };
-  
-  // Handle settings navigation
-  const handleSettings = () => {
-    navigate('/Configuration');
-    handleClose();
+
+  // Count unacknowledged alarms
+  const unacknowledgedCount = alarms?.filter(alarm => !alarm.acknowledgedBy).length || 0;
+
+  // Get color and icon based on alarm status
+  const getStatusInfo = (status) => {
+    switch (status) {
+      case 'CRITICAL':
+        return { icon: <ErrorIcon />, color: 'error.main' };
+      case 'MAJOR':
+        return { icon: <WarningIcon />, color: 'warning.main' };
+      case 'WARNING':
+        return { icon: <WarningIcon />, color: 'warning.light' };
+      default:
+        return { icon: <InfoIcon />, color: 'info.main' };
+    }
   };
-  
+
+  // Format time since (e.g., "2 hours ago")
+  const formatTimeSince = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMin = Math.floor(diffMs / 60000);
+    
+    if (diffMin < 1) return "à l'instant";
+    if (diffMin < 60) return `il y a ${diffMin} min`;
+    
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `il y a ${diffHours} h`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `il y a ${diffDays} j`;
+  };
+
   return (
-    <AppBar 
-      position="fixed" 
-      sx={{ 
-        zIndex: (theme) => theme.zIndex.drawer + 1,
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)'
-      }}
-    >
-      <Toolbar>
-        {isMobile && (
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={onDrawerToggle}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-        )}
-        
-        <Typography
-          variant="h6"
-          component={RouterLink}
-          to="/"
-          sx={{
-            mr: 2,
-            textDecoration: 'none',
-            color: 'inherit',
-            flexGrow: 1,
-            fontWeight: 'bold',
-          }}
-        >
-          AlarmManager
-        </Typography>
-        
-        {user ? (
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {/* Notification Bell Component */}
-            <NotificationBell />
-            
-            <Tooltip title="Menu utilisateur">
-              <IconButton
-                onClick={handleMenu}
-                color="inherit"
-                aria-label="account menu"
-              >
-                <Avatar
-                  sx={{ width: 32, height: 32, bgcolor: 'primary.dark' }}
-                >
-                  {user.firstName ? user.firstName.charAt(0) : 'U'}
-                </Avatar>
-              </IconButton>
-            </Tooltip>
-            
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={Boolean(anchorEl)}
-              onClose={handleClose}
+    <>
+      <Tooltip title="Notifications">
+        <IconButton color="inherit" onClick={handleOpen}>
+          <Badge badgeContent={unacknowledgedCount} color="error">
+            <NotificationsIcon />
+          </Badge>
+        </IconButton>
+      </Tooltip>
+      
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        PaperProps={{
+          elevation: 3,
+          sx: {
+            maxHeight: 500,
+            width: '350px',
+            mt: 1,
+          },
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Alarmes
+          </Typography>
+          {unacknowledgedCount > 0 && (
+            <Button
+              startIcon={<DoneAllIcon />}
+              size="small"
+              onClick={handleAcknowledgeAll}
+              disabled={acknowledgeAllMutation.isLoading}
             >
-              <Box sx={{ px: 2, py: 1 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-                  {user.firstName} {user.lastName}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.email || user.username}
-                </Typography>
-              </Box>
-              
-              <Divider />
-              
-              <MenuItem onClick={handleProfile}>
-                <AccountCircleIcon fontSize="small" sx={{ mr: 1 }} />
-                Profil
-              </MenuItem>
-              
-              {['administrator', 'supervisor'].includes(user.role) && (
-                <MenuItem onClick={handleSettings}>
-                  <SettingsIcon fontSize="small" sx={{ mr: 1 }} />
-                  Configuration
-                </MenuItem>
-              )}
-              
-              <Divider />
-              
-              <MenuItem onClick={handleLogout}>
-                <ExitToAppIcon fontSize="small" sx={{ mr: 1 }} />
-                Déconnexion
-              </MenuItem>
-            </Menu>
+              Tout acquitter
+            </Button>
+          )}
+        </Box>
+        
+        <Divider />
+        
+        {isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress size={24} />
+          </Box>
+        ) : error ? (
+          <Box sx={{ p: 2 }}>
+            <Typography color="error">
+              Erreur de chargement des alarmes
+            </Typography>
+          </Box>
+        ) : alarms?.length === 0 ? (
+          <Box sx={{ p: 3, textAlign: 'center' }}>
+            <Typography color="text.secondary">
+              Aucune alarme active
+            </Typography>
           </Box>
         ) : (
-          <Button
-            color="inherit"
-            component={RouterLink}
-            to="/login"
-          >
-            Connexion
-          </Button>
+          <List sx={{ p: 0 }}>
+            {alarms?.map((alarm) => {
+              const { icon, color } = getStatusInfo(alarm.status);
+              return (
+                <React.Fragment key={alarm._id}>
+                  <ListItem 
+                    button 
+                    onClick={() => handleAlarmClick(alarm.siteId)}
+                    sx={{ 
+                      bgcolor: !alarm.acknowledgedBy ? 'action.hover' : 'inherit',
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar sx={{ bgcolor: color }}>
+                        {icon}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" fontWeight="medium">
+                            {alarm.siteId}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {formatTimeSince(alarm.timestamp)}
+                          </Typography>
+                        </Box>
+                      }
+                      secondary={
+                        <>
+                          <Typography variant="body2" component="span">
+                            {alarm.equipment}: {alarm.description}
+                          </Typography>
+                          {!alarm.acknowledgedBy && (
+                            <Button
+                              size="small"
+                              onClick={(e) => handleAcknowledgeAlarm(alarm._id, e)}
+                              sx={{ mt: 1, fontSize: '0.7rem' }}
+                            >
+                              Acquitter
+                            </Button>
+                          )}
+                        </>
+                      }
+                    />
+                  </ListItem>
+                  <Divider variant="inset" component="li" />
+                </React.Fragment>
+              );
+            })}
+          </List>
         )}
-      </Toolbar>
-    </AppBar>
+        
+        <Box sx={{ p: 2, textAlign: 'center' }}>
+          <Button fullWidth onClick={() => { handleClose(); navigate('/Monitoring'); }}>
+            Voir toutes les alarmes
+          </Button>
+        </Box>
+      </Menu>
+      
+      {/* Toast notification for new alarms */}
+      <Snackbar
+        open={!!notification}
+        autoHideDuration={5000}
+        onClose={() => setNotification(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert severity={notification?.severity || 'info'} sx={{ width: '100%' }}>
+          {notification?.message}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 
-export default Navbar;
+export default NotificationBell;

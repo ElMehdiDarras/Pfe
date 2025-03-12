@@ -1,5 +1,5 @@
-// Modified Dashboard.jsx - Fix for Sites tab
-import React, { useState } from 'react';
+// src/pages/Dashboard.jsx
+import React, { useState, useEffect } from 'react';
 import { 
   Typography,
   Grid,
@@ -19,7 +19,7 @@ import {
 import { useSiteSummary } from '../hooks/useSites';
 import { useAlarmStatistics, useActiveAlarms } from '../hooks/useAlarms';
 import AlarmStatusChart from '../components/alarms/AlarmStatusChart';
-import SiteTable from '../components/sites/SiteTable'; // Import the new component
+import SiteTable from '../components/sites/SiteTable';
 
 // Dashboard component
 const Dashboard = () => {
@@ -31,6 +31,24 @@ const Dashboard = () => {
   const isLoading = isSitesLoading || isStatsLoading || isAlarmsLoading;
   const hasError = sitesError || statsError || alarmsError;
 
+  // Add debugging logs for alarm statistics data
+  useEffect(() => {
+    console.log('Alarm statistics loaded:', alarmStats);
+    if (alarmStats) {
+      console.log('Statistics summary:', alarmStats.summary);
+      console.log('Time series data:', alarmStats.timeSeriesData);
+      
+      if (alarmStats.timeSeriesData) {
+        console.log('Hourly data available:', !!alarmStats.timeSeriesData.hourly);
+        console.log('Recent data available:', !!alarmStats.timeSeriesData.recent);
+        
+        if (alarmStats.timeSeriesData.hourly) {
+          console.log('Hourly data example:', alarmStats.timeSeriesData.hourly[0]);
+        }
+      }
+    }
+  }, [alarmStats]);
+
   // Stats summary from alarm data
   const stats = React.useMemo(() => {
     if (!alarmStats) return { critical: 0, major: 0, warning: 0, total: 0 };
@@ -40,6 +58,30 @@ const Dashboard = () => {
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  // Function to prepare and transform chart data
+  const prepareChartData = () => {
+    // Check for last24Hours property (added by our transformation)
+    if (alarmStats?.last24Hours && Array.isArray(alarmStats.last24Hours)) {
+      return alarmStats.last24Hours.map(item => ({
+        ...item,
+        hour: `${item.hour}h` // Make sure 'hour' is the key used for x-axis
+      }));
+    }
+    
+    // Fallback: transform hourly data if available
+    if (alarmStats?.timeSeriesData?.hourly && Array.isArray(alarmStats.timeSeriesData.hourly)) {
+      return alarmStats.timeSeriesData.hourly.map(item => ({
+        hour: `${item.label}h`,
+        critical: item.critical || 0,
+        major: item.major || 0,
+        warning: item.warning || 0
+      }));
+    }
+    
+    // No valid data found
+    return null;
   };
 
   if (isLoading) {
@@ -56,9 +98,19 @@ const Dashboard = () => {
         <Typography color="error">
           Erreur de chargement des données. Veuillez rafraîchir la page.
         </Typography>
+        {process.env.NODE_ENV === 'development' && (
+          <Box sx={{ mt: 2 }}>
+            {sitesError && <Typography variant="caption" display="block">Sites error: {sitesError.message}</Typography>}
+            {statsError && <Typography variant="caption" display="block">Stats error: {statsError.message}</Typography>}
+            {alarmsError && <Typography variant="caption" display="block">Alarms error: {alarmsError.message}</Typography>}
+          </Box>
+        )}
       </Box>
     );
   }
+
+  // Prepare chart data
+  const chartData = prepareChartData();
 
   return (
     <>
@@ -166,15 +218,30 @@ const Dashboard = () => {
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 'normal', fontSize: '1rem' }}>
                 Activité des Alarmes (Dernières 24 Heures)
               </Typography>
-              {alarmStats?.last24Hours && (
+              
+              {/* Chart with error handling */}
+              {chartData ? (
                 <Box sx={{ height: 300, mb: 3 }}>
                   <AlarmStatusChart 
-                    data={alarmStats.last24Hours.map(item => ({
-                      ...item,
-                      hour: `${item.hour}h`
-                    }))} 
+                    data={chartData} 
                     height={300} 
                   />
+                </Box>
+              ) : (
+                <Box 
+                  sx={{ 
+                    height: 300, 
+                    mb: 3, 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center',
+                    border: '1px dashed #ccc',
+                    borderRadius: 1
+                  }}
+                >
+                  <Typography color="text.secondary">
+                    Données statistiques non disponibles
+                  </Typography>
                 </Box>
               )}
 
@@ -196,7 +263,7 @@ const Dashboard = () => {
                     <TableBody>
                       {activeAlarms.slice(0, 10).map((alarm) => (
                         <TableRow 
-                          key={alarm.id}
+                          key={alarm._id || alarm.id}
                           sx={{ 
                             '&:nth-of-type(even)': { backgroundColor: '#fafafa' },
                             backgroundColor: alarm.status === 'CRITICAL' 
@@ -258,7 +325,7 @@ const Dashboard = () => {
                     <TableBody>
                       {activeAlarms.map((alarm) => (
                         <TableRow 
-                          key={alarm.id}
+                          key={alarm._id || alarm.id}
                           sx={{ 
                             '&:nth-of-type(even)': { backgroundColor: '#fafafa' },
                             backgroundColor: alarm.status === 'CRITICAL' 
@@ -305,21 +372,36 @@ const Dashboard = () => {
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 'normal', fontSize: '1rem' }}>
                 Statistiques des Alarmes
               </Typography>
-              {alarmStats?.last24Hours && (
+              
+              {/* Chart with error handling */}
+              {chartData ? (
                 <Box sx={{ height: 300, mb: 3 }}>
                   <AlarmStatusChart 
-                    data={alarmStats.last24Hours.map(item => ({
-                      ...item,
-                      hour: `${item.hour}h`
-                    }))} 
+                    data={chartData} 
                     height={300} 
                   />
+                </Box>
+              ) : (
+                <Box 
+                  sx={{ 
+                    height: 300, 
+                    mb: 3, 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center',
+                    border: '1px dashed #ccc',
+                    borderRadius: 1
+                  }}
+                >
+                  <Typography color="text.secondary">
+                    Données statistiques non disponibles
+                  </Typography>
                 </Box>
               )}
             </Box>
           )}
           
-          {/* Sites Tab - Fixed implementation */}
+          {/* Sites Tab */}
           {tabValue === 3 && (
             <Box sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 'normal', fontSize: '1rem' }}>

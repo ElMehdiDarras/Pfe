@@ -434,6 +434,76 @@ router.post('/:id/acknowledge', async (req, res) => {
     res.status(500).json({ error: 'Failed to acknowledge alarm' });
   }
 });
+// Acknowledge all active alarms
+router.post('/acknowledge-all', async (req, res) => {
+  try {
+    // Build query for active alarms
+    let query = {
+      status: { $ne: 'OK' },
+      resolvedAt: null,
+      acknowledgedBy: null, // Only unacknowledged alarms
+      acknowledgedAt: null
+    };
+    
+    // For agents, only include alarms from their sites
+    if (req.user.role === 'agent') {
+      query.siteId = { $in: req.user.sites };
+    }
+    
+    // Find alarms to acknowledge (to use for notifications)
+    const alarmsToAcknowledge = await Alarm.find(query);
+    
+    // Update all matching alarms
+    const result = await Alarm.updateMany(
+      query,
+      {
+        $set: {
+          acknowledgedBy: req.user.username,
+          acknowledgedAt: new Date()
+        }
+      }
+    );
+    
+    // Emit socket events for each acknowledged alarm
+    const io = req.app.get('io');
+    if (io && alarmsToAcknowledge.length > 0) {
+      // Emit batch acknowledgment event with summary
+      io.to('all-sites').emit('alarms-batch-acknowledged', {
+        count: alarmsToAcknowledge.length,
+        acknowledgedBy: req.user.username,
+        acknowledgedAt: new Date()
+      });
+      
+      // For individual detailed notifications, we'll emit for the most important ones
+      const highPriorityAlarms = alarmsToAcknowledge
+        .filter(a => ['CRITICAL', 'MAJOR'].includes(a.status))
+        .slice(0, 5); // Limit to 5 to avoid too many notifications
+      
+      for (const alarm of highPriorityAlarms) {
+        const acknowledgementData = {
+          alarmId: alarm._id,
+          siteId: alarm.siteId,
+          boxId: alarm.boxId,
+          pinId: alarm.pinId,
+          acknowledgedBy: req.user.username,
+          acknowledgedAt: new Date()
+        };
+        
+        // Emit to appropriate rooms
+        io.to('all-sites').emit('alarm-acknowledged', acknowledgementData);
+        io.to(`site-${alarm.siteId.replace(/\s+/g, '-')}`).emit('alarm-acknowledged', acknowledgementData);
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `${result.modifiedCount} alarms acknowledged successfully`
+    });
+  } catch (error) {
+    console.error('Error acknowledging all alarms:', error);
+    res.status(500).json({ error: 'Failed to acknowledge alarms' });
+  }
+});
 
 // Get alarm history for a specific site and timeframe
 // Useful for generating reports

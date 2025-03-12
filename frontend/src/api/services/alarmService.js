@@ -36,10 +36,10 @@ const alarmService = {
     }
   },
   
-  // Get alarm statistics
-  getAlarmStatistics: async () => {
+  // Get alarm statistics with time range support
+  getAlarmStatistics: async (timeRange = '24h') => {
     try {
-      const response = await api.get('/alarms/statistics');
+      const response = await api.get('/alarms/statistics', { params: { timeRange } });
       return response.data;
     } catch (error) {
       console.error('Error fetching alarm statistics:', error);
@@ -54,6 +54,50 @@ const alarmService = {
       return response.data;
     } catch (error) {
       console.error(`Error acknowledging alarm ${alarmId}:`, error);
+      throw error;
+    }
+  },
+  
+  // Get notifications
+  getNotifications: async (limit = 10) => {
+    try {
+      const response = await api.get('/notifications', { params: { limit } });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      throw error;
+    }
+  },
+  
+  // Mark notification as read
+  markNotificationAsRead: async (notificationId) => {
+    try {
+      const response = await api.patch(`/notifications/${notificationId}/read`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error marking notification ${notificationId} as read:`, error);
+      throw error;
+    }
+  },
+  
+  // Mark all notifications as read
+  markAllNotificationsAsRead: async () => {
+    try {
+      const response = await api.patch('/notifications/read-all');
+      return response.data;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  },
+  
+  // Get notification count
+  getNotificationCount: async () => {
+    try {
+      const response = await api.get('/notifications/count');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching notification count:', error);
       throw error;
     }
   }

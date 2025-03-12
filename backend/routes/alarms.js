@@ -3,6 +3,7 @@ const router = express.Router();
 const Alarm = require('../models/alarm');
 const Site = require('../models/sites.js');
 const { isSupervisorOrAdmin } = require('../middleware/auth');
+const { processAlarmNotification } = require('../services/socketService');
 
 // Get all alarms with pagination
 router.get('/', async (req, res) => {
@@ -61,7 +62,6 @@ router.get('/active', async (req, res) => {
 });
 
 // Get alarms by site
-// In routes/alarms.js, modify the site route
 router.get('/site/:siteId', async (req, res) => {
   try {
     const siteName = req.params.siteId.replace(/-/g, ' ');
@@ -127,9 +127,11 @@ router.get('/filter', async (req, res) => {
   }
 });
 
-// Get alarm statistics
+// Get alarm statistics with time range support
 router.get('/statistics', async (req, res) => {
   try {
+    const { timeRange = '24h' } = req.query;
+    
     // Base filter to apply site restrictions for agents
     let baseFilter = {};
     if (req.user.role === 'agent') {
@@ -165,56 +167,181 @@ router.get('/statistics', async (req, res) => {
     
     const siteStats = await Promise.all(
       sites.map(async (site) => {
-        const activeCount = await Alarm.countDocuments({ 
+        const criticalCount = await Alarm.countDocuments({ 
           siteId: site.name, 
-          status: { $ne: 'OK' },
+          status: 'CRITICAL',
           resolvedAt: null
+        });
+        
+        const majorCount = await Alarm.countDocuments({ 
+          siteId: site.name, 
+          status: 'MAJOR',
+          resolvedAt: null
+        });
+        
+        const warningCount = await Alarm.countDocuments({ 
+          siteId: site.name, 
+          status: 'WARNING',
+          resolvedAt: null
+        });
+        
+        const okCount = await Alarm.countDocuments({ 
+          siteId: site.name, 
+          status: 'OK'
         });
         
         return {
           name: site.name,
-          activeAlarms: activeCount
+          critical: criticalCount,
+          major: majorCount,
+          warning: warningCount,
+          ok: okCount
         };
       })
     );
     
-    // Get last 24 hours alarm statistics
-    const last24Hours = [];
-    const now = new Date();
-    for (let i = 23; i >= 0; i--) {
-      const hourStart = new Date(now);
-      hourStart.setHours(now.getHours() - i, 0, 0, 0);
+    // Get time series data based on requested time range
+    let timeSeriesData = {};
+    
+    // Hourly data for 24h view
+    if (timeRange === '24h' || timeRange === 'live') {
+      const hourlyData = [];
+      const now = new Date();
+      for (let i = 23; i >= 0; i--) {
+        const hourStart = new Date(now);
+        hourStart.setHours(now.getHours() - i, 0, 0, 0);
+        
+        const hourEnd = new Date(hourStart);
+        hourEnd.setHours(hourStart.getHours() + 1);
+        
+        // Apply site filtering for agents
+        const timeFilter = {
+          timestamp: { $gte: hourStart, $lt: hourEnd },
+          ...baseFilter
+        };
+        
+        const [criticalCount, majorCount, warningCount] = await Promise.all([
+          Alarm.countDocuments({
+            ...timeFilter,
+            status: 'CRITICAL'
+          }),
+          Alarm.countDocuments({
+            ...timeFilter,
+            status: 'MAJOR'
+          }),
+          Alarm.countDocuments({
+            ...timeFilter,
+            status: 'WARNING'
+          })
+        ]);
+        
+        hourlyData.push({
+          label: hourStart.getHours().toString(),
+          timestamp: hourStart,
+          critical: criticalCount,
+          major: majorCount,
+          warning: warningCount
+        });
+      }
       
-      const hourEnd = new Date(hourStart);
-      hourEnd.setHours(hourStart.getHours() + 1);
+      timeSeriesData.hourly = hourlyData;
+    }
+    
+    // Daily data for 7d view
+    if (timeRange === '7d') {
+      const dailyData = [];
+      const now = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const dayStart = new Date(now);
+        dayStart.setDate(now.getDate() - i);
+        dayStart.setHours(0, 0, 0, 0);
+        
+        const dayEnd = new Date(dayStart);
+        dayEnd.setDate(dayStart.getDate() + 1);
+        
+        // Apply site filtering for agents
+        const timeFilter = {
+          timestamp: { $gte: dayStart, $lt: dayEnd },
+          ...baseFilter
+        };
+        
+        const [criticalCount, majorCount, warningCount] = await Promise.all([
+          Alarm.countDocuments({
+            ...timeFilter,
+            status: 'CRITICAL'
+          }),
+          Alarm.countDocuments({
+            ...timeFilter,
+            status: 'MAJOR'
+          }),
+          Alarm.countDocuments({
+            ...timeFilter,
+            status: 'WARNING'
+          })
+        ]);
+        
+        const dayLabel = dayStart.toLocaleDateString('fr-FR', { 
+          weekday: 'short', 
+          day: 'numeric' 
+        });
+        
+        dailyData.push({
+          label: dayLabel,
+          timestamp: dayStart,
+          critical: criticalCount,
+          major: majorCount,
+          warning: warningCount
+        });
+      }
       
-      // Apply site filtering for agents
-      const timeFilter = {
-        timestamp: { $gte: hourStart, $lt: hourEnd },
-        ...baseFilter
-      };
+      timeSeriesData.daily = dailyData;
+    }
+    
+    // Recent data (last 30 minutes in 5-minute intervals) for live view
+    if (timeRange === 'live') {
+      const recentData = [];
+      const now = new Date();
       
-      const criticalCount = await Alarm.countDocuments({
-        ...timeFilter,
-        status: 'CRITICAL'
-      });
+      for (let i = 5; i >= 0; i--) {
+        const intervalStart = new Date(now);
+        intervalStart.setMinutes(now.getMinutes() - (i * 5), 0, 0);
+        
+        const intervalEnd = new Date(intervalStart);
+        intervalEnd.setMinutes(intervalStart.getMinutes() + 5);
+        
+        // Apply site filtering for agents
+        const timeFilter = {
+          timestamp: { $gte: intervalStart, $lt: intervalEnd },
+          ...baseFilter
+        };
+        
+        const [criticalCount, majorCount, warningCount] = await Promise.all([
+          Alarm.countDocuments({
+            ...timeFilter,
+            status: 'CRITICAL'
+          }),
+          Alarm.countDocuments({
+            ...timeFilter,
+            status: 'MAJOR'
+          }),
+          Alarm.countDocuments({
+            ...timeFilter,
+            status: 'WARNING'
+          })
+        ]);
+        
+        const timeLabel = `${intervalStart.getHours()}:${intervalStart.getMinutes().toString().padStart(2, '0')}`;
+        
+        recentData.push({
+          label: timeLabel,
+          timestamp: intervalStart,
+          critical: criticalCount,
+          major: majorCount,
+          warning: warningCount
+        });
+      }
       
-      const majorCount = await Alarm.countDocuments({
-        ...timeFilter,
-        status: 'MAJOR'
-      });
-      
-      const warningCount = await Alarm.countDocuments({
-        ...timeFilter,
-        status: 'WARNING'
-      });
-      
-      last24Hours.push({
-        hour: `${hourStart.getHours()}h`,
-        critical: criticalCount,
-        major: majorCount,
-        warning: warningCount
-      });
+      timeSeriesData.recent = recentData;
     }
     
     res.json({
@@ -228,7 +355,7 @@ router.get('/statistics', async (req, res) => {
         unacknowledged
       },
       siteStats,
-      last24Hours
+      timeSeriesData
     });
   } catch (error) {
     console.error('Error getting alarm statistics:', error);
@@ -289,6 +416,16 @@ router.post('/:id/acknowledge', async (req, res) => {
       
       // Emit to site-specific room for agents
       io.to(`site-${alarm.siteId.replace(/\s+/g, '-')}`).emit('alarm-acknowledged', acknowledgementData);
+      
+      // Process notification for acknowledgement
+      // Clone alarm and modify for notification purposes
+      const notificationAlarm = JSON.parse(JSON.stringify(alarm));
+      notificationAlarm.description = `Alarm acknowledged by ${req.user.username}`;
+      notificationAlarm.status = alarm.status; // Preserve original status
+      notificationAlarm.type = 'ACKNOWLEDGEMENT';
+      
+      // Process notification
+      await processAlarmNotification(notificationAlarm, io);
     }
     
     res.json({ success: true, alarm });
@@ -386,6 +523,72 @@ router.get('/report/generate', isSupervisorOrAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error generating report:', error);
     res.status(500).json({ error: 'Failed to generate report' });
+  }
+});
+
+// Create a new alarm (typically from Modbus service or API)
+router.post('/', async (req, res) => {
+  try {
+    // Create new alarm
+    const alarm = new Alarm(req.body);
+    await alarm.save();
+    
+    // Process notification
+    const io = req.app.get('io');
+    if (io && (alarm.status === 'CRITICAL' || alarm.status === 'MAJOR')) {
+      await processAlarmNotification(alarm, io);
+    }
+    
+    res.status(201).json(alarm);
+  } catch (error) {
+    console.error('Error creating alarm:', error);
+    res.status(500).json({ error: 'Failed to create alarm' });
+  }
+});
+
+// Update an alarm
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get the original alarm to check for status changes
+    const originalAlarm = await Alarm.findById(id);
+    if (!originalAlarm) {
+      return res.status(404).json({ error: 'Alarm not found' });
+    }
+    
+    // Check permissions for agents
+    if (req.user.role === 'agent' && !req.user.sites.includes(originalAlarm.siteId)) {
+      return res.status(403).json({ error: 'You do not have access to this alarm' });
+    }
+    
+    // Update the alarm
+    const updatedAlarm = await Alarm.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true }
+    );
+    
+    // Process notification for status changes
+    const io = req.app.get('io');
+    if (io && originalAlarm.status !== updatedAlarm.status) {
+      // Add previous status for context
+      updatedAlarm.previousStatus = originalAlarm.status;
+      
+      // Only send notifications for escalations to CRITICAL or MAJOR
+      // or deescalations from CRITICAL or MAJOR to a lower level
+      const wasHighPriority = ['CRITICAL', 'MAJOR'].includes(originalAlarm.status);
+      const isHighPriority = ['CRITICAL', 'MAJOR'].includes(updatedAlarm.status);
+      
+      if (isHighPriority || wasHighPriority) {
+        await processAlarmNotification(updatedAlarm, io);
+      }
+    }
+    
+    res.json(updatedAlarm);
+  } catch (error) {
+    console.error(`Error updating alarm ${req.params.id}:`, error);
+    res.status(500).json({ error: 'Failed to update alarm' });
   }
 });
 

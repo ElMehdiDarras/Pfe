@@ -50,7 +50,7 @@ const Monitoring = () => {
 
   // Navigate to site detail
   const handleSiteClick = (siteId) => {
-    navigate(`/sites/${siteId}`);
+    navigate(`/SiteDetail/${siteId}`);
   };
 
   // Function to render status chip

@@ -1,157 +1,110 @@
-// src/App.tsx or App.jsx (depending on your file extension)
+// src/App.js with QueryClientProvider and updated routing
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-
-// Context Providers
+// Add QueryClient imports
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+// Contexts
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
-
-// Route Protection Components
-import { ProtectedRoute } from './routes/ProtectedRoute';
-import { SiteRoute } from './routes/SiteRoute';
-
-// Layout
+import { NotificationProvider } from './context/NotificationContext';
+// Components
+import ProtectedRoute from './routes/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
-
 // Pages
-import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Monitoring from './pages/Monitoring';
+import Login from './pages/Login';
 import SiteDetail from './pages/SiteDetail';
+import SiteMapView from './pages/SiteMapView';
+import Monitoring from './pages/Monitoring';
 import Statistics from './pages/Statistics';
 import Configuration from './pages/Configuration';
-import UserManagement from './pages/UserManagement';
 import Profile from './pages/Profile';
-import Unauthorized from './pages/Unauthorized';
 import NotFound from './pages/NotFound';
-import Historique from './pages/Historique';
+import Unauthorized from './pages/Unauthorized';
 import Cartes from './pages/Cartes';
+import UserManagement from './pages/UserManagement';
+import Historique from './pages/Historique';
 
-// Create a theme
+// Create a QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+// Create theme
 const theme = createTheme({
   palette: {
     primary: {
       main: '#1976d2',
     },
     secondary: {
-      main: '#dc004e',
+      main: '#9c27b0',
+    },
+    error: {
+      main: '#f44336',
+    },
+    warning: {
+      main: '#ff9800',
+    },
+    info: {
+      main: '#2196f3',
+    },
+    success: {
+      main: '#4caf50',
     },
     background: {
       default: '#f5f5f5',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h4: {
-      fontWeight: 500,
-    },
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
-          borderRadius: '8px',
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: '6px',
-          textTransform: 'none',
-        },
-      },
-    },
-  },
-});
-
-// Create a React Query client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: true,
-      staleTime: 30000,
-      gcTime: 5 * 60 * 1000, // 5 minutes
     },
   },
 });
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <SocketProvider>
-            <BrowserRouter>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/login" element={<Login />} />
-                
-                {/* Protected routes - require authentication */}
-                <Route element={<ProtectedRoute />}>
-                  {/* Main layout wrapper for authenticated pages */}
-                  <Route element={<MainLayout />}>
-                    {/* Dashboard */}
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/dashboard" element={<Navigate to="/" replace />} />
-                    
-                    {/* Always accessible to authenticated users */}
-                    <Route path="/monitoring" element={<Monitoring />} />
-                    <Route path="/profile" element={<Profile />} />
-                    
-                    {/* Routes requiring specific permissions */}
-                    <Route path="/statistics" element={
-                      <ProtectedRoute requiredPermission="VIEW_STATISTICS">
-                        <Statistics />
+            <NotificationProvider>
+              <Router>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/unauthorized" element={<Unauthorized />} />
+                  
+                  {/* Protected routes using MainLayout */}
+                  <Route
+                    path="/"
+                    element={
+                      <ProtectedRoute>
+                        <MainLayout />
                       </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/configuration" element={
-                      <ProtectedRoute requiredPermission="VIEW_CONFIGURATION">
-                        <Configuration />
-                      </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/cartes" element={
-                      <ProtectedRoute requiredPermission="VIEW_CARTES">
-                        <Cartes />
-                      </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/historique" element={
-                      <ProtectedRoute requiredPermission="VIEW_HISTORIQUE">
-                        <Historique />
-                      </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/users" element={
-                      <ProtectedRoute requiredPermission="MANAGE_USERS">
-                        <UserManagement />
-                      </ProtectedRoute>
-                    } />
-                    
-                    {/* Site-specific routes with additional access control */}
-                    <Route element={<SiteRoute />}>
-                      <Route path="/sites/:siteId" element={<SiteDetail />} />
-                    </Route>
-                    
-                    {/* Error and utility pages */}
-                    <Route path="/unauthorized" element={<Unauthorized />} />
+                    }
+                  >
+                    <Route index element={<Dashboard />} />
+                    <Route path="Cartes" element={<Cartes />} />
+                    <Route path="SiteDetail/:siteId" element={<SiteDetail />} />
+                    <Route path="SiteMapView" element={<SiteMapView />} />
+                    <Route path="Monitoring" element={<Monitoring />} />
+                    <Route path="Statistics" element={<Statistics />} />
+                    <Route path="Configuration" element={<Configuration />} />
+                    <Route path="UserManagement" element={<UserManagement />} />
+                    <Route path="Historique" element={<Historique />} />
+                    <Route path="Profile" element={<Profile />} />
                     <Route path="*" element={<NotFound />} />
                   </Route>
-                </Route>
-              </Routes>
-            </BrowserRouter>
+                </Routes>
+              </Router>
+            </NotificationProvider>
           </SocketProvider>
         </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

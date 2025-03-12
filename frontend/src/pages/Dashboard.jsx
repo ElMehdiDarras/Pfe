@@ -1,8 +1,8 @@
 // Modified Dashboard.jsx - Fix for Sites tab
 import React, { useState } from 'react';
 import { 
-  Typography, 
-  Grid, 
+  Typography,
+  Grid,
   Paper, 
   Box, 
   Tabs,

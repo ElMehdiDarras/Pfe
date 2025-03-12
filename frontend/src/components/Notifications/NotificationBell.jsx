@@ -13,7 +13,6 @@ import {
   Divider,
   Avatar,
   Tooltip,
-  Badge,
   useMediaQuery,
   useTheme
 } from '@mui/material';
@@ -21,8 +20,8 @@ import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import SettingsIcon from '@mui/icons-material/Settings';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../notifications/NotificationBell';
 
 const Navbar = ({ onDrawerToggle }) => {
   const navigate = useNavigate();
@@ -97,14 +96,8 @@ const Navbar = ({ onDrawerToggle }) => {
         
         {user ? (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {/* Simple notification bell */}
-            <Tooltip title="Notifications">
-              <IconButton color="inherit" onClick={() => navigate('/Monitoring')}>
-                <Badge badgeContent={3} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+            {/* Notification Bell Component */}
+            <NotificationBell />
             
             <Tooltip title="Menu utilisateur">
               <IconButton

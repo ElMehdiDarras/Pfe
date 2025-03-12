@@ -1,17 +1,46 @@
 // src/components/alarms/AlarmStatusChart.jsx
 import React from 'react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend
+} from 'recharts';
 
-const AlarmStatusChart = ({ data, height = 400 }) => {
+const AlarmStatusChart = ({ data, height = 300 }) => {
+  // Safety check for data
+  if (!data || data.length === 0) {
+    return (
+      <div style={{ 
+        height: height, 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        border: '1px dashed #ccc',
+        borderRadius: '4px',
+        color: '#666'
+      }}>
+        Aucune donnée disponible pour le graphique
+      </div>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data}>
+      <LineChart
+        data={data}
+        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
         <XAxis 
           dataKey="hour" 
           tick={{ fontSize: 12, fill: '#666' }}
-          axisLine={{ stroke: '#e0e0e0' }}
           tickLine={{ stroke: '#e0e0e0' }}
+          axisLine={{ stroke: '#e0e0e0' }}
         />
         <YAxis 
           tick={{ fontSize: 12, fill: '#666' }}
@@ -22,56 +51,39 @@ const AlarmStatusChart = ({ data, height = 400 }) => {
           contentStyle={{ 
             backgroundColor: 'white', 
             border: '1px solid #e0e0e0',
-            borderRadius: '4px',
-            fontSize: '12px'
-          }} 
+            borderRadius: '4px'
+          }}
         />
         <Legend 
           verticalAlign="bottom"
           height={36}
-          iconType="circle"
-          formatter={(value) => {
-            let color;
-            switch(value) {
-              case 'critical':
-                value = 'Critique';
-                color = '#f44336';
-                break;
-              case 'major':
-                value = 'Majeure';
-                color = '#ff9800';
-                break;
-              case 'warning':
-                value = 'Warning';
-                color = '#ffeb3b';
-                break;
-            }
-            return <span style={{ color }}>{value}</span>;
-          }}
         />
         <Line 
           type="monotone" 
           dataKey="critical" 
           stroke="#f44336" 
           strokeWidth={2} 
-          dot={{ r: 3, fill: '#f44336' }} 
+          dot={{ r: 2 }}
           activeDot={{ r: 5 }}
+          name="Critique"
         />
         <Line 
           type="monotone" 
           dataKey="major" 
           stroke="#ff9800" 
           strokeWidth={2} 
-          dot={{ r: 3, fill: '#ff9800' }} 
+          dot={{ r: 2 }}
           activeDot={{ r: 5 }}
+          name="Majeure"
         />
         <Line 
           type="monotone" 
           dataKey="warning" 
           stroke="#ffeb3b" 
           strokeWidth={2} 
-          dot={{ r: 3, fill: '#ffeb3b' }} 
+          dot={{ r: 2 }}
           activeDot={{ r: 5 }}
+          name="Warning"
         />
       </LineChart>
     </ResponsiveContainer>

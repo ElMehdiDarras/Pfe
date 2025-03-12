@@ -4,7 +4,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { hasPermission } from '../utils/permissions';
 
-export const ProtectedRoute = ({ children, requiredPermission }) => {
+const ProtectedRoute = ({ children, requiredPermission }) => {
   const { user } = useAuth();
   
   if (!user) {
@@ -17,3 +17,5 @@ export const ProtectedRoute = ({ children, requiredPermission }) => {
   
   return children || <Outlet />;
 };
+
+export default ProtectedRoute;

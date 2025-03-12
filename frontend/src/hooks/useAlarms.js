@@ -33,13 +33,14 @@ export const useAlarmsBySite = (siteId) => {
   });
 };
 
-// Get alarm statistics
-export const useAlarmStatistics = () => {
+// Get alarm statistics with time range support
+export const useAlarmStatistics = (timeRange = '24h') => {
   return useQuery({
-    queryKey: ['alarms', 'statistics'],
+    queryKey: ['alarms', 'statistics', timeRange],
     queryFn: async () => {
-      return await alarmService.getAlarmStatistics();
-    }
+      return await alarmService.getAlarmStatistics(timeRange);
+    },
+    refetchInterval: timeRange === 'live' ? 10000 : false // Auto-refresh every 10 seconds in live mode
   });
 };
 
@@ -54,6 +55,45 @@ export const useAcknowledgeAlarm = () => {
     onSuccess: () => {
       // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['alarms'] });
+    }
+  });
+};
+
+// Get recent notifications
+export const useNotifications = (limit = 10) => {
+  return useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      return await alarmService.getNotifications(limit);
+    },
+    refetchInterval: 30000 // Refresh every 30 seconds
+  });
+};
+
+// Mark a notification as read
+export const useMarkNotificationAsRead = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (notificationId) => {
+      return await alarmService.markNotificationAsRead(notificationId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    }
+  });
+};
+
+// Mark all notifications as read
+export const useMarkAllNotificationsAsRead = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async () => {
+      return await alarmService.markAllNotificationsAsRead();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     }
   });
 };

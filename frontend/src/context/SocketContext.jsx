@@ -15,7 +15,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     let socketInstance = null;
-
+    
     // Only connect to socket if user is authenticated
     if (user) {
       try {
@@ -23,62 +23,75 @@ export const SocketProvider = ({ children }) => {
         
         // Make sure we're using the correct URL without trailing slashes
         let socketUrl = process.env.REACT_APP_SOCKET_URL || window.location.origin;
-        
         // Remove any trailing slashes to avoid namespace issues
         socketUrl = socketUrl.replace(/\/+$/, '');
         
         console.log('Connecting to Socket.IO at:', socketUrl);
         
-        // Initialize socket connection with explicit path and no namespace
         socketInstance = io(socketUrl, {
           auth: { token },
           transports: ['websocket', 'polling'],
-          path: '/socket.io',  // Make sure this matches your server configuration
+          path: '/socket.io',
           reconnectionAttempts: 5,
           reconnectionDelay: 1000,
           autoConnect: true
         });
-
-        // Handle connection events
+        
         socketInstance.on('connect', () => {
           console.log('Socket.IO connected successfully');
           setIsConnected(true);
         });
-
+        
         socketInstance.on('disconnect', (reason) => {
           console.log(`Socket.IO disconnected: ${reason}`);
           setIsConnected(false);
         });
-
+        
         socketInstance.on('connect_error', (error) => {
           console.error('Socket.IO connection error details:', error.message);
           setIsConnected(false);
         });
-
+        
         // Listen for alarm updates
         socketInstance.on('alarm-status-change', (data) => {
           console.log('Received alarm status change:', data);
           setLastMessage({ type: 'alarm-status-change', data });
         });
-
+        
         socketInstance.on('box-status-change', (data) => {
           setLastMessage({ type: 'box-status-change', data });
         });
-
+        
         socketInstance.on('site-status-updated', (data) => {
           setLastMessage({ type: 'site-status-updated', data });
         });
-
+        
         socketInstance.on('alarm-acknowledged', (data) => {
           setLastMessage({ type: 'alarm-acknowledged', data });
         });
-
+        
+        // Add notification listeners
+        socketInstance.on('notification', (data) => {
+          console.log('Received notification:', data);
+          setLastMessage({ type: 'notification', data });
+        });
+        
+        socketInstance.on('notification:clear', (data) => {
+          console.log('Received notification clear:', data);
+          setLastMessage({ type: 'notification:clear', data });
+        });
+        
+        socketInstance.on('notification:count', (data) => {
+          console.log('Received notification count update:', data);
+          setLastMessage({ type: 'notification:count', data });
+        });
+        
         setSocket(socketInstance);
       } catch (error) {
         console.error('Error initializing Socket.IO:', error);
       }
     }
-
+    
     // Cleanup function
     return () => {
       if (socketInstance) {
@@ -95,6 +108,6 @@ export const SocketProvider = ({ children }) => {
     isConnected,
     lastMessage
   };
-
+  
   return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 };

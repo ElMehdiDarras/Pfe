@@ -1,6 +1,5 @@
-// src/components/sites/SiteTable.jsx
+// In src/components/sites/SiteTable.jsx
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -10,23 +9,15 @@ import {
   TableRow,
   Paper,
   Chip,
-  CircularProgress,
+  Button,
   Box,
-  Typography,
-  IconButton,
-  Tooltip
+  CircularProgress,
+  Typography
 } from '@mui/material';
-import InfoIcon from '@mui/icons-material/Info';
+import { Info as InfoIcon } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
 
 const SiteTable = ({ sites, isLoading, error }) => {
-  const navigate = useNavigate();
-
-  const handleSiteClick = (site) => {
-    // Convert site name to URL-friendly format
-    const siteId = site.name.replace(/\s+/g, '-');
-    navigate(`/SiteDetail/${siteId}`);
-  };
-
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -37,19 +28,9 @@ const SiteTable = ({ sites, isLoading, error }) => {
 
   if (error) {
     return (
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 3, bgcolor: '#ffebee', borderRadius: 1 }}>
         <Typography color="error">
-          Erreur de chargement des sites: {error.message}
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (!sites || sites.length === 0) {
-    return (
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography color="text.secondary">
-          Aucun site trouvé
+          Erreur de chargement des sites. Veuillez rafraîchir la page.
         </Typography>
       </Box>
     );
@@ -57,7 +38,7 @@ const SiteTable = ({ sites, isLoading, error }) => {
 
   return (
     <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #e0e0e0' }}>
-      <Table size="small">
+      <Table size="medium">
         <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
           <TableRow>
             <TableCell>Nom du Site</TableCell>
@@ -69,15 +50,10 @@ const SiteTable = ({ sites, isLoading, error }) => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {sites.map((site) => (
+          {sites && sites.map((site) => (
             <TableRow 
               key={site.id || site._id}
-              sx={{ 
-                '&:nth-of-type(even)': { backgroundColor: '#fafafa' },
-                cursor: 'pointer',
-                '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
-              }}
-              onClick={() => handleSiteClick(site)}
+              sx={{ '&:nth-of-type(even)': { backgroundColor: '#fafafa' } }}
             >
               <TableCell>{site.name}</TableCell>
               <TableCell>{site.location}</TableCell>
@@ -92,24 +68,29 @@ const SiteTable = ({ sites, isLoading, error }) => {
                   <Chip label="OK" size="small" sx={{ backgroundColor: '#4caf50', color: 'white' }} />
                 )}
               </TableCell>
-              <TableCell>{site.boxes?.length || 0}</TableCell>
-              <TableCell>{site.equipment?.length || 0}</TableCell>
+              <TableCell>{site.boxCount || 0}</TableCell>
+              <TableCell>{site.equipmentCount || 0}</TableCell>
               <TableCell>
-                <Tooltip title="Détails du site">
-                  <IconButton 
-                    size="small" 
-                    color="primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSiteClick(site);
-                    }}
-                  >
-                    <InfoIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                <Button
+                  component={Link}
+                  to={`/SiteDetail/${site.id}`}
+                  startIcon={<InfoIcon />}
+                  color="primary"
+                  size="small"
+                  variant="text"
+                >
+                  Détails
+                </Button>
               </TableCell>
             </TableRow>
           ))}
+          {(!sites || sites.length === 0) && (
+            <TableRow>
+              <TableCell colSpan={6} align="center">
+                Aucun site trouvé
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </TableContainer>

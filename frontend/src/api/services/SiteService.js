@@ -1,4 +1,4 @@
-// src/api/services/siteService.js
+// In src/api/services/SiteService.js
 import api from '../axios';
 
 // Site-related API calls
@@ -18,6 +18,8 @@ const siteService = {
   getSiteSummary: async () => {
     try {
       const response = await api.get('/sites/summary');
+      // Log for debugging
+      console.log('Site summary response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching site summary:', error);
@@ -25,22 +27,22 @@ const siteService = {
     }
   },
   
-// In api/services/SiteService.js
-getSiteById: async (id) => {
-  try {
-    const response = await api.get(`/sites/${id}`);
-    return response.data;
-  } catch (error) {
-    // Check for access denied error
-    if (error.response?.status === 403) {
-      console.error(`Access denied to site ${id}:`, error.response.data);
-      throw new Error('You do not have permission to access this site');
+  // Get site by ID
+  getSiteById: async (id) => {
+    try {
+      const response = await api.get(`/sites/${id}`);
+      return response.data;
+    } catch (error) {
+      // Check for access denied error
+      if (error.response?.status === 403) {
+        console.error(`Access denied to site ${id}:`, error.response.data);
+        throw new Error('You do not have permission to access this site');
+      }
+      
+      console.error(`Error fetching site ${id}:`, error);
+      throw error;
     }
-    
-    console.error(`Error fetching site ${id}:`, error);
-    throw error;
   }
-}
 };
 
 export default siteService;

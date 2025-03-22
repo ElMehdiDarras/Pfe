@@ -1,0 +1,99 @@
+/* src/styles/dashboard-cards.css */
+
+.dashboard-card {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.critical-card {
+  border-left: 4px solid #f44336;
+}
+
+.major-card {
+  border-left: 4px solid #ff9800;
+}
+
+.warning-card {
+  border-left: 4px solid #ffeb3b;
+}
+
+.success-card {
+  border-left: 4px solid #4caf50;
+}
+
+/* Styles for the dashboard tabs */
+.dashboard-tabs .MuiTabs-indicator {
+  background-color: #FF5722;
+}
+
+.dashboard-tabs .MuiTab-root {
+  text-transform: none;
+  font-weight: 500;
+}
+
+.dashboard-tabs .MuiTab-root.Mui-selected {
+  color: #2c4c7c;
+}
+
+/* Dashboard chart container */
+.chart-container {
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  background-color: white;
+}
+
+.dashboard-content {
+  padding: 24px;
+}
+
+/* For the metric value display */
+.metric-value {
+  font-size: 42px;
+  font-weight: 500;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.metric-label {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+}
+
+/* Icon container for dashboard cards */
+.icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-bottom: 8px;
+}
+
+.critical-icon {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+}
+
+.major-icon {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #ff9800;
+}
+
+.warning-icon {
+  background-color: rgba(255, 235, 59, 0.1);
+  color: #ffeb3b;
+}
+
+.success-icon {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+}

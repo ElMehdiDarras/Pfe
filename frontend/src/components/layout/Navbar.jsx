@@ -63,7 +63,9 @@ const Navbar = ({ onDrawerToggle }) => {
       position="fixed" 
       sx={{ 
         zIndex: (theme) => theme.zIndex.drawer + 1,
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)'
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+        backgroundColor: '#2c4c7c', // ThingsBoard blue
+        borderRadius: 0, // Ensure no rounded corners
       }}
     >
       <Toolbar>
@@ -79,24 +81,35 @@ const Navbar = ({ onDrawerToggle }) => {
           </IconButton>
         )}
         
-        <Typography
-          variant="h6"
-          component={RouterLink}
-          to="/"
-          sx={{
-            mr: 2,
-            textDecoration: 'none',
-            color: 'inherit',
-            flexGrow: 1,
-            fontWeight: 'bold',
-          }}
-        >
-          AlarmManager
-        </Typography>
+
+<Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+  <RouterLink to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+    <img 
+      src="/icons/Maroc_telecom_logo.svg" 
+      alt="Maroc Telecom" 
+      style={{ height: '30px', marginRight: '12px' }}
+      onError={(e) => {
+        e.target.style.display = 'none';
+      }}
+    />
+    <Typography
+      variant="h6"
+      sx={{
+        color: 'inherit',
+        fontWeight: 'bold',
+      }}
+    >
+      AlarmSense
+    </Typography>
+  </RouterLink>
+</Box>
+        
+        {/* Spacer to push notification bell and user menu to the right */}
+        <Box sx={{ flexGrow: 1 }} />
         
         {user ? (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {/* Only keep the working NotificationBell component */}
+            {/* Notification Bell */}
             <NotificationBell />
             
             <Tooltip title="Menu utilisateur">
@@ -104,11 +117,17 @@ const Navbar = ({ onDrawerToggle }) => {
                 onClick={handleMenu}
                 color="inherit"
                 aria-label="account menu"
+                sx={{ ml: 1 }}
               >
                 <Avatar
-                  sx={{ width: 32, height: 32, bgcolor: 'primary.dark' }}
+                  sx={{ 
+                    width: 32, 
+                    height: 32, 
+                    bgcolor: '#FF5722', // ThingsBoard orange
+                    color: '#ffffff',
+                  }}
                 >
-                  {user.firstName ? user.firstName.charAt(0) : 'U'}
+                  {user.firstName ? user.firstName.charAt(0) : user.username ? user.username.charAt(0) : 'U'}
                 </Avatar>
               </IconButton>
             </Tooltip>
@@ -127,6 +146,13 @@ const Navbar = ({ onDrawerToggle }) => {
               }}
               open={Boolean(anchorEl)}
               onClose={handleClose}
+              PaperProps={{
+                elevation: 3,
+                sx: {
+                  minWidth: 200,
+                  mt: 1,
+                },
+              }}
             >
               <Box sx={{ px: 2, py: 1 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>

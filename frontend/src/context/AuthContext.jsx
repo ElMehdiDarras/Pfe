@@ -16,11 +16,9 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       try {
         const storedUser = authService.getUser();
-        
         if (storedUser && authService.isAuthenticated()) {
           // Set user from local storage
           setUser(storedUser);
-          
           try {
             // Refresh user data from backend
             const freshUserData = await authService.getCurrentUser();
@@ -38,27 +36,24 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
-
+    
     checkAuth();
   }, []);
 
   const login = async (username, password) => {
     setLoading(true);
     setError(null);
-    
     try {
       const response = await authService.login(username, password);
       setUser(response.user);
       return response.user;
     } catch (err) {
       console.error('Login error:', err);
-      
       if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else {
         setError('Erreur de connexion. Veuillez réessayer.');
       }
-      
       throw err;
     } finally {
       setLoading(false);
@@ -79,14 +74,36 @@ export const AuthProvider = ({ children }) => {
     return authService.hasAccessToSite(user, siteName);
   };
 
+  // Add isAuthenticated helper property
+  const isAuthenticated = !!user && authService.isAuthenticated();
+
+  // Add a check/refresh method that components can call
+  const checkAuthentication = async () => {
+    try {
+      if (!authService.isAuthenticated()) {
+        return false;
+      }
+      
+      // Optionally refresh user data here
+      return true;
+    } catch (err) {
+      console.error('Authentication check failed:', err);
+      return false;
+    }
+  };
+
   const value = {
     user,
     isLoading: loading,
     error,
     login,
     logout,
-    hasAccessToSite
+    hasAccessToSite,
+    isAuthenticated,
+    checkAuthentication
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+export default AuthContext;

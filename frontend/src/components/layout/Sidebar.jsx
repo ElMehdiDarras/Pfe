@@ -59,127 +59,153 @@ const Sidebar = ({ mobileOpen = false, onDrawerToggle }) => {
     }
   };
 
+  // Styles for menu items
+  const menuItemStyles = {
+    color: '#ffffff',
+    '&.Mui-selected': {
+      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+      color: '#ffffff',
+      '&:hover': {
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+      },
+    },
+    '&:hover': {
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    },
+  };
+
+  // Styles for icons
+  const iconStyles = {
+    color: 'rgba(255, 255, 255, 0.7)',
+  };
+
   // Conditional drawer content (permanent on large screens, temporary on small)
   const drawerContent = (
-    <>
-      <Box sx={{ overflow: 'auto' }}>
-        <List>
-          {/* Dashboard */}
-          <ListItem disablePadding>
-            <ListItemButton 
-              selected={location.pathname === '/'} 
-              onClick={() => handleNavigation('/')}
-            >
-              <ListItemIcon>
-                <DashboardIcon />
-              </ListItemIcon>
-              <ListItemText primary="Tableau de bord" />
-            </ListItemButton>
-          </ListItem>
+    <Box sx={{ overflow: 'auto', mt: 2 }}>
+      <List sx={{ p: 1 }}>
+        {/* Dashboard */}
+        <ListItem disablePadding>
+          <ListItemButton 
+            selected={location.pathname === '/'} 
+            onClick={() => handleNavigation('/')}
+            sx={menuItemStyles}
+          >
+            <ListItemIcon sx={iconStyles}>
+              <DashboardIcon />
+            </ListItemIcon>
+            <ListItemText primary="Tableau de bord" />
+          </ListItemButton>
+        </ListItem>
 
-          {/* Monitoring */}
-          <ListItem disablePadding>
-            <ListItemButton 
-              selected={location.pathname === '/Monitoring'} 
-              onClick={() => handleNavigation('/Monitoring')}
-            >
-              <ListItemIcon>
-                <MonitorHeartIcon />
-              </ListItemIcon>
-              <ListItemText primary="Monitoring" />
-            </ListItemButton>
-          </ListItem>
+        {/* Monitoring */}
+        <ListItem disablePadding>
+          <ListItemButton 
+            selected={location.pathname === '/Monitoring'} 
+            onClick={() => handleNavigation('/Monitoring')}
+            sx={menuItemStyles}
+          >
+            <ListItemIcon sx={iconStyles}>
+              <MonitorHeartIcon />
+            </ListItemIcon>
+            <ListItemText primary="Monitoring" />
+          </ListItemButton>
+        </ListItem>
 
-          {/* Statistics */}
-          <ListItem disablePadding>
-            <ListItemButton 
-              selected={location.pathname === '/Statistics'} 
-              onClick={() => handleNavigation('/Statistics')}
-            >
-              <ListItemIcon>
-                <AssessmentIcon />
-              </ListItemIcon>
-              <ListItemText primary="Statistiques" />
-            </ListItemButton>
-          </ListItem>
+        {/* Statistics */}
+        <ListItem disablePadding>
+          <ListItemButton 
+            selected={location.pathname === '/Statistics'} 
+            onClick={() => handleNavigation('/Statistics')}
+            sx={menuItemStyles}
+          >
+            <ListItemIcon sx={iconStyles}>
+              <AssessmentIcon />
+            </ListItemIcon>
+            <ListItemText primary="Statistiques" />
+          </ListItemButton>
+        </ListItem>
 
-          {/* Sites Map */}
-          <ListItem disablePadding>
-            <ListItemButton 
-              selected={location.pathname === '/Cartes'} 
-              onClick={() => handleNavigation('/Cartes')}
-            >
-              <ListItemIcon>
-                <MapIcon />
-              </ListItemIcon>
-              <ListItemText primary="Cartes" />
-            </ListItemButton>
-          </ListItem>
+        {/* Sites Map */}
+        <ListItem disablePadding>
+          <ListItemButton 
+            selected={location.pathname === '/Cartes'} 
+            onClick={() => handleNavigation('/Cartes')}
+            sx={menuItemStyles}
+          >
+            <ListItemIcon sx={iconStyles}>
+              <MapIcon />
+            </ListItemIcon>
+            <ListItemText primary="Cartes" />
+          </ListItemButton>
+        </ListItem>
 
-          {/* History */}
-          <ListItem disablePadding>
-            <ListItemButton 
-              selected={location.pathname === '/Historique'} 
-              onClick={() => handleNavigation('/Historique')}
-            >
-              <ListItemIcon>
-                <HistoryIcon />
-              </ListItemIcon>
-              <ListItemText primary="Historique" />
-            </ListItemButton>
-          </ListItem>
+        {/* History */}
+        <ListItem disablePadding>
+          <ListItemButton 
+            selected={location.pathname === '/Historique'} 
+            onClick={() => handleNavigation('/Historique')}
+            sx={menuItemStyles}
+          >
+            <ListItemIcon sx={iconStyles}>
+              <HistoryIcon />
+            </ListItemIcon>
+            <ListItemText primary="Historique" />
+          </ListItemButton>
+        </ListItem>
 
-          <Divider />
+        <Divider sx={{ my: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
 
-          {/* Configuration - Only shown to admin and supervisor */}
-          {user && (user.role === 'administrator' || user.role === 'supervisor') && (
-            <>
+        {/* Configuration - Only shown to admin and supervisor */}
+        {user && (user.role === 'administrator' || user.role === 'supervisor') && (
+          <>
+            <ListItem disablePadding>
+              <ListItemButton 
+                selected={location.pathname === '/Configuration'} 
+                onClick={() => handleNavigation('/Configuration')}
+                sx={menuItemStyles}
+              >
+                <ListItemIcon sx={iconStyles}>
+                  <SettingsIcon />
+                </ListItemIcon>
+                <ListItemText primary="Configuration" />
+              </ListItemButton>
+            </ListItem>
+
+            {/* User Management - Admin only */}
+            {user.role === 'administrator' && (
               <ListItem disablePadding>
                 <ListItemButton 
-                  selected={location.pathname === '/Configuration'} 
-                  onClick={() => handleNavigation('/Configuration')}
+                  selected={location.pathname === '/UserManagement'} 
+                  onClick={() => handleNavigation('/UserManagement')}
+                  sx={menuItemStyles}
                 >
-                  <ListItemIcon>
-                    <SettingsIcon />
+                  <ListItemIcon sx={iconStyles}>
+                    <PeopleIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Configuration" />
+                  <ListItemText primary="Utilisateurs" />
                 </ListItemButton>
               </ListItem>
+            )}
+            
+            <Divider sx={{ my: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+          </>
+        )}
 
-              {/* User Management - Admin only */}
-              {user.role === 'administrator' && (
-                <ListItem disablePadding>
-                  <ListItemButton 
-                    selected={location.pathname === '/UserManagement'} 
-                    onClick={() => handleNavigation('/UserManagement')}
-                  >
-                    <ListItemIcon>
-                      <PeopleIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Utilisateurs" />
-                  </ListItemButton>
-                </ListItem>
-              )}
-              
-              <Divider />
-            </>
-          )}
-
-          {/* Profile */}
-          <ListItem disablePadding>
-            <ListItemButton 
-              selected={location.pathname === '/Profile'} 
-              onClick={() => handleNavigation('/Profile')}
-            >
-              <ListItemIcon>
-                <PersonIcon />
-              </ListItemIcon>
-              <ListItemText primary="Profil" />
-            </ListItemButton>
-          </ListItem>
-        </List>
-      </Box>
-    </>
+        {/* Profile */}
+        <ListItem disablePadding>
+          <ListItemButton 
+            selected={location.pathname === '/Profile'} 
+            onClick={() => handleNavigation('/Profile')}
+            sx={menuItemStyles}
+          >
+            <ListItemIcon sx={iconStyles}>
+              <PersonIcon />
+            </ListItemIcon>
+            <ListItemText primary="Profil" />
+          </ListItemButton>
+        </ListItem>
+      </List>
+    </Box>
   );
 
   return (
@@ -198,7 +224,9 @@ const Sidebar = ({ mobileOpen = false, onDrawerToggle }) => {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: drawerWidth,
-              bgcolor: 'background.paper'
+              backgroundColor: '#2c4c7c', // ThingsBoard blue
+              color: '#ffffff',
+              borderRadius: 0, // Ensure no rounded corners
             },
           }}
         >
@@ -216,10 +244,11 @@ const Sidebar = ({ mobileOpen = false, onDrawerToggle }) => {
             width: drawerWidth,
             position: 'fixed',
             height: '100%',
-            borderRight: '1px solid',
-            borderColor: 'divider',
+            backgroundColor: '#2c4c7c', // ThingsBoard blue
+            color: '#ffffff',
+            borderRadius: 0, // Ensure no rounded corners
+            borderRight: '1px solid rgba(255, 255, 255, 0.1)',
             top: 64,  // AppBar height
-            bgcolor: 'background.paper'
           },
         }}
         open

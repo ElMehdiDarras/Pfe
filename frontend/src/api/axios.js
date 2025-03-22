@@ -1,4 +1,4 @@
-// In axios.js or wherever your axios instance is configured
+// src/api/axios.js
 import axios from 'axios';
 
 const api = axios.create({
@@ -6,27 +6,48 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true
 });
 
-// Add request interceptor to include auth token
+// Add auth token to requests - fixed implementation
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    
+    // Log the token format (first few characters only for security)
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      console.log(`Token found (first 10 chars): ${token.substring(0, 10)}...`);
+      config.headers.Authorization = `Bearer ${token}`;
+      
+      // Log the complete header being set
+      console.log(`Authorization header set: ${config.headers.Authorization.substring(0, 20)}...`);
+    } else {
+      console.warn(`Request to ${config.url} without auth token`);
     }
+    
+    // Log all headers for debugging
+    console.log('All headers being sent:', JSON.stringify(config.headers));
+    
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
-// Add response interceptor for better error handling
+// Enhanced response interceptor
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   (error) => {
-    console.error('API error intercepted:', error.response?.status, error.response?.data);
+    // Handle auth errors - improved error logging
+    if (error.response?.status === 401) {
+      console.error('Authentication error:', error.response.data);
+      // Don't automatically redirect or clear token
+    }
+    
     return Promise.reject(error);
   }
 );

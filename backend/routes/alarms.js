@@ -2,27 +2,60 @@ const express = require('express');
 const router = express.Router();
 const Alarm = require('../models/alarm');
 const Site = require('../models/sites.js');
-const { isSupervisorOrAdmin } = require('../middleware/auth');
+const { isSupervisorOrAdmin, auth, flexibleAuth } = require('../middleware/auth');
 const { processAlarmNotification } = require('../services/socketService');
 
 // Get all alarms with pagination
-router.get('/', async (req, res) => {
+// In routes/alarms.js
+router.get('/',auth, async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
-    const skip = (page - 1) * limit;
+    // Add debugging to help identify issues
+    console.log('GET /alarms request received');
+    console.log('User:', req.user ? { id: req.user._id, role: req.user.role } : 'No user found');
     
-    let query = {};
+    const { 
+      limit = 100, 
+      skip = 0, 
+      sortBy = 'timestamp', 
+      sortOrder = -1,
+      includeResolved = true
+    } = req.query;
+    
+    // Convert to numeric values
+    const limitNum = parseInt(limit);
+    const skipNum = parseInt(skip);
+    const sortOrderNum = parseInt(sortOrder);
+    
+    // Build query
+    const query = {};
+    
+    // Only include active alarms if specified
+    if (includeResolved === 'false') {
+      query.resolvedAt = null;
+    }
+    
+    // Check if user exists before accessing user.role
+    if (!req.user) {
+      return res.status(401).json({ 
+        error: 'Authentication required', 
+        details: 'User not found in request'
+      });
+    }
     
     // For agents, only show alarms from their assigned sites
     if (req.user.role === 'agent') {
       query.siteId = { $in: req.user.sites };
     }
     
+    console.log('Fetching alarms with query:', query);
+    
+    // Create the sort object - THIS WAS MISSING
+    const sort = { [sortBy]: sortOrderNum };
+    
     const alarms = await Alarm.find(query)
-      .sort({ timestamp: -1 })
-      .skip(skip)
-      .limit(limit);
+      .sort(sort)  // Now using the properly defined sort variable
+      .skip(skipNum)
+      .limit(limitNum);
     
     const total = await Alarm.countDocuments(query);
     
@@ -30,16 +63,15 @@ router.get('/', async (req, res) => {
       alarms,
       pagination: {
         total,
-        page,
-        pages: Math.ceil(total / limit)
+        page: Math.floor(skipNum / limitNum) + 1,
+        pages: Math.ceil(total / limitNum)
       }
     });
   } catch (error) {
-    console.error('Error getting alarms:', error);
-    res.status(500).json({ error: 'Failed to retrieve alarms' });
+    console.error('Detailed error in GET /alarms:', error);
+    res.status(500).json({ error: 'Failed to retrieve alarms', details: error.message });
   }
 });
-
 // Get active alarms (not OK or not resolved)
 router.get('/active', async (req, res) => {
   try {
@@ -49,7 +81,7 @@ router.get('/active', async (req, res) => {
     };
     
     // For agents, filter by their accessible sites
-    if (req.user.role === 'agent') {
+    if (req.user && req.user.role === 'agent') {
       query.siteId = { $in: req.user.sites };
     }
     
@@ -67,7 +99,7 @@ router.get('/site/:siteId', async (req, res) => {
     const siteName = req.params.siteId.replace(/-/g, ' ');
     
     // Check if agent has access to this site
-    if (req.user.role === 'agent') {
+    if (req.user && req.user.role === 'agent') {
       // Normalize site names for comparison
       const normalizedSiteName = siteName.replace(/[\s-]/g, '').toLowerCase();
       const hasAccess = req.user.sites.some(userSite => {
@@ -85,6 +117,86 @@ router.get('/site/:siteId', async (req, res) => {
   } catch (error) {
     console.error(`Error getting alarms for site ${req.params.siteId}:`, error);
     res.status(500).json({ error: 'Failed to retrieve site alarms' });
+  }
+});
+
+// Add these routes to your existing alarms.js file
+// Get current equipment states (not historical alarms)
+router.get('/current-states', async (req, res) => {
+  try {
+    let query = {};
+    
+    // For agents, only show states from their assigned sites
+    if (req.user && req.user.role === 'agent') {
+      query.siteId = { $in: req.user.sites };
+    }
+    
+    // Get the latest state for each unique equipment
+    const pipeline = [
+      { $match: query },
+      // Sort to ensure we get the latest records first
+      { $sort: { timestamp: -1 } },
+      // Group by the unique equipment identifier to get only the latest record
+      { 
+        $group: { 
+          _id: { siteId: "$siteId", equipment: "$equipment", pinId: "$pinId" },
+          alarm: { $first: "$$ROOT" }
+        } 
+      },
+      // Replace the root with the actual alarm document
+      { $replaceRoot: { newRoot: "$alarm" } }
+    ];
+    
+    const currentStates = await Alarm.aggregate(pipeline);
+    
+    res.json(currentStates);
+  } catch (error) {
+    console.error('Error getting current states:', error);
+    res.status(500).json({ error: 'Failed to retrieve current states' });
+  }
+});
+
+// Get current states by site
+router.get('/current-states/:siteId', async (req, res) => {
+  try {
+    const siteName = req.params.siteId.replace(/-/g, ' ');
+    
+    // Check if agent has access to this site
+    if (req.user && req.user.role === 'agent') {
+      // Normalize site names for comparison
+      const normalizedSiteName = siteName.replace(/[\s-]/g, '').toLowerCase();
+      const hasAccess = req.user.sites.some(userSite => {
+        const normalizedUserSite = userSite.replace(/[\s-]/g, '').toLowerCase();
+        return normalizedSiteName === normalizedUserSite;
+      });
+      
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'You do not have access to this site' });
+      }
+    }
+    
+    // Get the latest state for each unique equipment in this site
+    const pipeline = [
+      { $match: { siteId: siteName } },
+      // Sort to ensure we get the latest records first
+      { $sort: { timestamp: -1 } },
+      // Group by the unique equipment identifier to get only the latest record
+      { 
+        $group: { 
+          _id: { equipment: "$equipment", pinId: "$pinId" },
+          alarm: { $first: "$$ROOT" }
+        } 
+      },
+      // Replace the root with the actual alarm document
+      { $replaceRoot: { newRoot: "$alarm" } }
+    ];
+    
+    const currentStates = await Alarm.aggregate(pipeline);
+    
+    res.json(currentStates);
+  } catch (error) {
+    console.error(`Error getting current states for site ${req.params.siteId}:`, error);
+    res.status(500).json({ error: 'Failed to retrieve current states' });
   }
 });
 
@@ -134,7 +246,7 @@ router.get('/statistics', async (req, res) => {
     
     // Base filter to apply site restrictions for agents
     let baseFilter = {};
-    if (req.user.role === 'agent') {
+    if (req.user && req.user.role === 'agent') {
       baseFilter.siteId = { $in: req.user.sites };
     }
     
@@ -159,7 +271,7 @@ router.get('/statistics', async (req, res) => {
     // Get alarm counts by site
     // For agents, only get stats for their assigned sites
     let sites;
-    if (req.user.role === 'agent') {
+    if (req.user && req.user.role === 'agent') {
       sites = req.user.sites.map(siteName => ({ name: siteName }));
     } else {
       sites = await Site.find().select('name');
@@ -201,51 +313,54 @@ router.get('/statistics', async (req, res) => {
     );
     
     // Get time series data based on requested time range
-    let timeSeriesData = {};
+    // In alarm statistics route
+// Get time series data based on requested time range
+let timeSeriesData = {};
+
+// Hourly data for 24h view
+if (timeRange === '24h' || timeRange === 'live') {
+  const hourlyData = [];
+  const now = new Date();
+  for (let i = 23; i >= 0; i--) {
+    const hourStart = new Date(now);
+    hourStart.setHours(now.getHours() - i, 0, 0, 0);
     
-    // Hourly data for 24h view
-    if (timeRange === '24h' || timeRange === 'live') {
-      const hourlyData = [];
-      const now = new Date();
-      for (let i = 23; i >= 0; i--) {
-        const hourStart = new Date(now);
-        hourStart.setHours(now.getHours() - i, 0, 0, 0);
-        
-        const hourEnd = new Date(hourStart);
-        hourEnd.setHours(hourStart.getHours() + 1);
-        
-        // Apply site filtering for agents
-        const timeFilter = {
-          timestamp: { $gte: hourStart, $lt: hourEnd },
-          ...baseFilter
-        };
-        
-        const [criticalCount, majorCount, warningCount] = await Promise.all([
-          Alarm.countDocuments({
-            ...timeFilter,
-            status: 'CRITICAL'
-          }),
-          Alarm.countDocuments({
-            ...timeFilter,
-            status: 'MAJOR'
-          }),
-          Alarm.countDocuments({
-            ...timeFilter,
-            status: 'WARNING'
-          })
-        ]);
-        
-        hourlyData.push({
-          label: hourStart.getHours().toString(),
-          timestamp: hourStart,
-          critical: criticalCount,
-          major: majorCount,
-          warning: warningCount
-        });
-      }
-      
-      timeSeriesData.hourly = hourlyData;
-    }
+    const hourEnd = new Date(hourStart);
+    hourEnd.setHours(hourStart.getHours() + 1);
+    
+    // Apply site filtering for agents
+    const timeFilter = {
+      timestamp: { $gte: hourStart, $lt: hourEnd },
+      ...baseFilter
+    };
+    
+    // Count ALL alarms in this time period, not just active ones
+    const [criticalCount, majorCount, warningCount] = await Promise.all([
+      Alarm.countDocuments({
+        ...timeFilter,
+        status: 'CRITICAL'
+      }),
+      Alarm.countDocuments({
+        ...timeFilter,
+        status: 'MAJOR'
+      }),
+      Alarm.countDocuments({
+        ...timeFilter,
+        status: 'WARNING'
+      })
+    ]);
+    
+    hourlyData.push({
+      label: hourStart.getHours().toString(),
+      timestamp: hourStart,
+      critical: criticalCount,
+      major: majorCount,
+      warning: warningCount
+    });
+  }
+  
+  timeSeriesData.hourly = hourlyData;
+}
     
     // Daily data for 7d view
     if (timeRange === '7d') {
@@ -597,7 +712,7 @@ router.get('/report/generate', isSupervisorOrAdmin, async (req, res) => {
 });
 
 // Create a new alarm (typically from Modbus service or API)
-router.post('/', async (req, res) => {
+router.post('/', flexibleAuth, async (req, res) => {
   try {
     // Create new alarm
     const alarm = new Alarm(req.body);
@@ -615,6 +730,7 @@ router.post('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to create alarm' });
   }
 });
+
 
 // Update an alarm
 router.put('/:id', async (req, res) => {

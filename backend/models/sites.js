@@ -12,7 +12,7 @@ const boxSchema = new mongoose.Schema({
   },
   port: {
     type: Number,
-    default: 502 // Default Modbus TCP port
+    default: 502 
   },
   status: {
     type: String,
@@ -48,6 +48,29 @@ const equipmentSchema = new mongoose.Schema({
     type: String
   }
 });
+
+const pinSchema = new mongoose.Schema({
+  pinId: {
+    type: String,
+    required: true
+  },
+  equipmentName: {
+    type: String,
+    required: true
+  },
+  alarmLevel: {
+    type: String,
+    enum: ['OK', 'WARNING', 'MAJOR', 'CRITICAL'],
+    required: true
+  },
+  description: {
+    type: String,
+    required: true
+  }
+});
+
+// Add to boxSchema
+pins: [pinSchema]
 
 // Define the Site schema
 const siteSchema = new mongoose.Schema({

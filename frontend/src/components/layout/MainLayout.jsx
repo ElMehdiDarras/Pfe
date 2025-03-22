@@ -4,6 +4,7 @@ import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import Footer from './Footer';
 
 const MainLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -13,22 +14,41 @@ const MainLayout = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column',
+      minHeight: '100vh',
+      backgroundColor: '#f5f5f5'
+    }}>
       <Navbar onDrawerToggle={handleDrawerToggle} />
-      <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
-      
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { xs: '100%', md: `calc(100% - 240px)` },
-          mt: 8, // Adds margin top to account for the navbar
-          ml: { xs: 0, md: '240px' }, // Add margin-left on desktop to account for the sidebar
-          backgroundColor: '#f5f5f5',
+      <Box sx={{ display: 'flex', flexGrow: 1 }}>
+        <Sidebar mobileOpen={mobileOpen} onDrawerToggle={handleDrawerToggle} />
+        
+        <Box
+          component="main"
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            flexGrow: 1,
+            p: 3,
+            pt: 10,
+            width: { xs: '100%', md: `calc(100% - 240px)` },
+            ml: { xs: 0, md: '240px' },
+          }}
+        >
+          <Box sx={{ flexGrow: 1 }}>
+            <Outlet />
+          </Box>
+        </Box>
+      </Box>
+      <Box 
+        sx={{ 
+          mt: 'auto',
+          ml: { xs: 0, md: '240px' }, 
+          width: { xs: '100%', md: `calc(100% - 240px)` } 
         }}
       >
-        <Outlet />
+        <Footer />
       </Box>
     </Box>
   );

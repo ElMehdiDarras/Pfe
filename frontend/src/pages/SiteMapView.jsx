@@ -1,277 +1,208 @@
-// src/components/map/SiteMapView.jsx
-import React, { useEffect, useRef } from 'react';
+// src/pages/SiteMapView.jsx
+import React, { useState, useEffect } from 'react';
 import {
   Box,
+  Typography,
   CircularProgress,
-  Alert
+  Alert,
+  Chip,
+  Button
 } from '@mui/material';
-import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { useSites } from '../hooks/useSites';
 
-// Fix the marker icon issue in Leaflet with webpack
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Define accurate coordinates for known Moroccan cities
-const CITY_COORDINATES = {
-  'Rabat-Hay NAHDA': { latitude: 34.022405, longitude: -6.834543 },
-  'Rabat-Soekarno': { latitude: 34.033742, longitude: -6.826401 },
-  'Casa-Nations Unies': { latitude: 33.572422, longitude: -7.590944 },
-  'Tanger': { latitude: 35.777222, longitude: -5.803889 },
-  'Fès-Ville Nouvelle': { latitude: 34.033333, longitude: -5.000000 },
-  'Fès-ALADARISSA': { latitude: 34.050531, longitude: -4.993580 },
-  'Meknès-HAMRIA II': { latitude: 33.895000, longitude: -5.554722 },
-  'Meknès-HAMRIA III': { latitude: 33.897300, longitude: -5.558100 },
-  'Oujda-Téléphone': { latitude: 34.680800, longitude: -1.908600 },
-  'Marrakech': { latitude: 31.631794, longitude: -8.008889 },
-  'Agadir': { latitude: 30.427755, longitude: -9.598107 },
-  'Tétouan': { latitude: 35.572356, longitude: -5.368890 },
-  'Nador-LGD': { latitude: 35.174700, longitude: -2.930300 },
-  'Settat-LGD': { latitude: 33.000800, longitude: -7.616700 },
-  'Béni Mellal-LGD': { latitude: 32.334400, longitude: -6.355000 }
+// Create custom icon based on status
+const createCustomIcon = (status) => {
+  // Map status to icon file
+  let iconPath;
+  switch (status?.toUpperCase()) {
+    case 'CRITICAL':
+      iconPath = '/icons/marker-critical.svg';
+      break;
+    case 'MAJOR':
+      iconPath = '/icons/marker-major.svg';
+      break;
+    case 'WARNING':
+      iconPath = '/icons/marker-warning.svg';
+      break;
+    case 'OK':
+      iconPath = '/icons/datacenter-ok.svg';
+      break;
+    default:
+      iconPath = '/icons/marker-ok.svg';
+  }
+  
+  return L.icon({
+    iconUrl: iconPath,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+  });
 };
 
-// Custom marker component with proper pulsing effect
-const SiteMapView = ({ sites, height = 500, isLoading = false, error = null }) => {
-  const mapRef = useRef(null);
-  const mapInstance = useRef(null);
-  const markersRef = useRef([]);
-  const pulseLayersRef = useRef([]);
-
+// Component to set map bounds to markers
+const SetBoundsToMarkers = ({ markers }) => {
+  const map = useMap();
+  
   useEffect(() => {
-    // Add the CSS for pulse animation if it doesn't exist
-    if (!document.getElementById('pulse-animation-style')) {
-      const style = document.createElement('style');
-      style.id = 'pulse-animation-style';
-      style.textContent = `
-        @keyframes pulse {
-          0% {
-            opacity: 1;
-            transform: scale(0.5);
-          }
-          100% {
-            opacity: 0;
-            transform: scale(1.5);
-          }
-        }
-        .pulse-circle {
-          animation: pulse 1.5s ease-out infinite;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    return () => {
-      // Cleanup function will be called when component unmounts
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!mapRef.current || isLoading || error) return;
-
-    // Initialize map if it doesn't exist
-    if (!mapInstance.current) {
-      mapInstance.current = L.map(mapRef.current, {
-        center: [31.794, -7.09], // Center on Morocco
-        zoom: 6,
-        maxBounds: [
-          [20.0, -17.0], // Southwest corner
-          [40.0, 0.0]    // Northeast corner
-        ],
-        maxBoundsViscosity: 1.0
-      });
-
-      // Add OpenStreetMap tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      }).addTo(mapInstance.current);
-    }
-
-    // Clear previous markers and pulse layers
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current = [];
-    
-    pulseLayersRef.current.forEach(layer => layer.remove());
-    pulseLayersRef.current = [];
-
-    if (!sites || !sites.length) return;
-
-    // Process sites and add markers for each
-    sites.forEach((site) => {
-      // Get accurate coordinates for the site
-      let coordinates;
-
-      // First try to find exact match in our predefined coordinates
-      for (const [cityName, coords] of Object.entries(CITY_COORDINATES)) {
-        if (site.name && site.name.includes(cityName)) {
-          coordinates = coords;
-          break;
-        }
-      }
-
-      // If no match, try to match partially
-      if (!coordinates) {
-        // Extract city name from site name
-        let cityName = '';
-        if (site.name && site.name.includes('-')) {
-          cityName = site.name.split('-')[0].trim();
-        } else if (site.location) {
-          cityName = site.location.split(' ')[0].trim();
-        }
-
-        // Try to find by partial match
-        for (const [knownCity, coords] of Object.entries(CITY_COORDINATES)) {
-          if (knownCity.includes(cityName) || cityName.includes(knownCity.split('-')[0])) {
-            coordinates = coords;
-            break;
-          }
-        }
-      }
-
-      // If still no coordinates, use fallback or generate slightly random coords for demo
-      if (!coordinates && site.coordinates) {
-        coordinates = site.coordinates;
-      } else if (!coordinates) {
-        // Generate random coordinates around Morocco for demonstration
-        coordinates = {
-          latitude: 31.794 + (Math.random() - 0.5) * 4,
-          longitude: -7.09 + (Math.random() - 0.5) * 4
-        };
-      }
-
-      // Determine marker color based on site status
-      let markerColor;
-      switch (site.status) {
-        case 'CRITICAL':
-          markerColor = '#f44336';
-          break;
-        case 'MAJOR':
-          markerColor = '#ff9800';
-          break;
-        case 'WARNING':
-          markerColor = '#ffeb3b';
-          break;
-        case 'OK':
-          markerColor = '#4caf50';
-          break;
-        default:
-          markerColor = '#4caf50'; // Default to OK
-      }
-
-      // Create marker and add to map
-      const icon = L.divIcon({
-        className: 'custom-map-marker',
-        html: `<div style="background-color: ${markerColor}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-        popupAnchor: [0, -12],
-      });
-
-      const marker = L.marker([coordinates.latitude, coordinates.longitude], {
-        icon: icon,
-        title: site.name
-      }).addTo(mapInstance.current);
-
-      // Add popup with site information
-      marker.bindPopup(
-        `<div style="min-width: 200px;">
-          <h3>${site.name || 'Site sans nom'}</h3>
-          <p><strong>Statut:</strong> ${site.status || 'OK'}</p>
-          <p><strong>Alarmes actives:</strong> ${site.activeAlarms || 0}</p>
-          <p><strong>Emplacement:</strong> ${site.location || 'N/A'}</p>
-        </div>`
+    if (markers && markers.length > 0) {
+      const validMarkers = markers.filter(
+        marker => marker.coordinates && 
+        marker.coordinates.latitude && 
+        marker.coordinates.longitude
       );
-
-      markersRef.current.push(marker);
-
-      // Add pulse effect for sites with active alarms
-      if (site.activeAlarms > 0 || site.status === 'CRITICAL' || site.status === 'MAJOR') {
-        // Create the pulse effect as a circle marker
-        const pulseOptions = {
-          radius: 20,
-          color: markerColor,
-          fillColor: markerColor,
-          fillOpacity: 0.3,
-          weight: 1,
-          className: 'pulse-circle'
-        };
-        
-        // We create a permanent layer for the pulse effect
-        const pulseLayer = L.circleMarker(
-          [coordinates.latitude, coordinates.longitude], 
-          pulseOptions
-        ).addTo(mapInstance.current);
-        
-        pulseLayersRef.current.push(pulseLayer);
+      
+      if (validMarkers.length > 0) {
+        const bounds = L.latLngBounds(
+          validMarkers.map(marker => [
+            marker.coordinates.latitude,
+            marker.coordinates.longitude
+          ])
+        );
+        map.fitBounds(bounds, { padding: [50, 50] });
       }
-    });
-
-    // Fit map to markers bounds if we have markers
-    if (markersRef.current.length > 0) {
-      const group = new L.featureGroup(markersRef.current);
-      mapInstance.current.fitBounds(group.getBounds(), { padding: [50, 50] });
     }
+  }, [map, markers]);
+  
+  return null;
+};
 
-    // Make sure map is properly sized
-    setTimeout(() => {
-      if (mapInstance.current) {
-        mapInstance.current.invalidateSize();
-      }
-    }, 100);
-
-    return () => {
-      // This cleanup will run when the component unmounts or when dependencies change
-    };
-  }, [sites, isLoading, error]);
-
-  // Handle window resize to update map size
+const SiteMapView = ({ sites, height = 400, settings = {} }) => {
+  const { data: sitesData, isLoading, error } = useSites();
+  const [markers, setMarkers] = useState([]);
+  
+  // Use provided sites or fetched sites data
+  const displaySites = sites && sites.length > 0 ? sites : sitesData;
+  
+  // No need for complex marker settings as we're using SVG icons
+  
+  // Prepare markers from sites data
   useEffect(() => {
-    const handleResize = () => {
-      if (mapInstance.current) {
-        mapInstance.current.invalidateSize();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
-  if (isLoading) {
+    if (displaySites) {
+      const siteMarkers = displaySites
+        .filter(site => site.coordinates && site.coordinates.latitude && site.coordinates.longitude)
+        .map(site => ({
+          id: site.id || site._id,
+          name: site.name,
+          status: site.status || 'OK',
+          location: site.location,
+          activeAlarms: site.activeAlarms || 0,
+          coordinates: site.coordinates
+        }));
+      
+      setMarkers(siteMarkers);
+    }
+  }, [displaySites]);
+  
+  // Handle click on a marker
+  const handleMarkerClick = (site) => {
+    if (settings.onSiteClick && typeof settings.onSiteClick === 'function') {
+      settings.onSiteClick(site);
+    }
+  };
+  
+  // Get the appropriate icon based on site status
+  const getIconForStatus = (status) => {
+    return createCustomIcon(status);
+  };
+  
+  if (isLoading && !sites) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: height }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
       </Box>
     );
   }
-
-  if (error) {
+  
+  if (error && !sites) {
+    return <Alert severity="error">Erreur de chargement des données: {error.message}</Alert>;
+  }
+  
+  if ((!displaySites || displaySites.length === 0) && (!markers || markers.length === 0)) {
     return (
-      <Box sx={{ height: height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Alert severity="error">
-          Erreur lors du chargement de la carte: {error.message || 'Erreur inconnue'}
-        </Alert>
-      </Box>
+      <Alert severity="info">Aucun site disponible avec des coordonnées pour affichage sur la carte</Alert>
     );
   }
-
+  
   return (
-    <Box 
-      ref={mapRef}
-      sx={{ 
-        height: height, 
-        width: '100%',
-        borderRadius: 1,
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-    />
+    <Box sx={{ height: height, width: '100%', position: 'relative' }} className="map-container">
+      <MapContainer 
+        center={[31.7917, -7.0926]} // Default center on Morocco
+        zoom={5}
+        style={{ height: '100%', width: '100%' }}
+        className="site-map"
+      >
+        {/* Standard OpenStreetMap Layer */}
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        
+        {markers.map((marker) => (
+          <Marker
+            key={marker.id || marker.name}
+            position={[marker.coordinates.latitude, marker.coordinates.longitude]}
+            icon={getIconForStatus(marker.status)}
+            eventHandlers={{
+              click: () => {
+                // Direct navigation mode - don't do anything with the popup
+                if (settings.disablePopup) {
+                  handleMarkerClick(
+                    displaySites.find(site => 
+                      (site.id === marker.id) || 
+                      (site._id === marker.id) || 
+                      (site.name === marker.name)
+                    )
+                  );
+                }
+              }
+            }}
+          >
+            <Popup className="site-popup">
+              <Box className="site-popup-content">
+                <Typography variant="subtitle1" className="site-popup-title">
+                  {marker.name}
+                </Typography>
+                <Box className="site-popup-status">
+                  <Typography variant="body2">Statut:</Typography>
+                  <Chip 
+                    label={marker.status} 
+                    size="small"
+                    className={`status-chip ${marker.status?.toLowerCase()}-chip`}
+                  />
+                </Box>
+                <Typography variant="body2" className="site-popup-info">
+                  Location: {marker.location}
+                </Typography>
+                <Typography variant="body2" className="site-popup-info">
+                  Alarmes actives: {marker.activeAlarms}
+                </Typography>
+                
+                <Box className="site-popup-actions">
+                  <Button
+                    variant="contained"
+                    className="site-details-button"
+                    fullWidth
+                    onClick={() => handleMarkerClick(
+                      displaySites.find(site => 
+                        (site.id === marker.id) || 
+                        (site._id === marker.id) || 
+                        (site.name === marker.name)
+                      )
+                    )}
+                  >
+                    Voir les détails du site
+                  </Button>
+                </Box>
+              </Box>
+            </Popup>
+          </Marker>
+        ))}
+        
+        <SetBoundsToMarkers markers={markers} />
+      </MapContainer>
+    </Box>
   );
 };
 

@@ -1,0 +1,207 @@
+/* src/styles/global.css */
+
+/* 
+ * Note: Instead of using @import which can cause webpack issues,
+ * import these CSS files directly in your index.js or App.js:
+ * 
+ * import './styles/thingsboard-theme.css';
+ * import './styles/dashboard-cards.css';
+ * import './styles/setup-leaflet-css.css';
+ * import './styles/global.css';
+ */
+
+/* Global styles */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background-color);
+  color: #333;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Align content properly */
+.content-wrapper {
+  padding: 24px;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* Page titles */
+.page-title {
+  font-size: 24px;
+  font-weight: 500;
+  margin-bottom: 24px;
+  color: var(--primary-color);
+}
+
+/* Cards */
+.card {
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Status styling */
+.status-chip {
+  font-weight: 500 !important;
+  min-width: 80px;
+}
+
+.critical-chip {
+  background-color: var(--error-color) !important;
+  color: white !important;
+}
+
+.major-chip {
+  background-color: var(--warning-color) !important;
+  color: black !important;
+}
+
+.warning-chip {
+  background-color: var(--warning-color) !important;
+  color: black !important;
+}
+
+.ok-chip {
+  background-color: var(--success-color) !important;
+  color: white !important;
+}
+
+/* Site Map specific styles */
+.map-container {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.site-map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Site popup styles */
+.site-popup-content {
+  padding: 16px;
+}
+
+.site-popup-title {
+  font-weight: 600 !important;
+  margin-bottom: 12px !important;
+  color: var(--primary-color);
+}
+
+.site-popup-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.site-popup-info {
+  margin-bottom: 4px !important;
+}
+
+.site-popup-actions {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.site-details-button {
+  background-color: var(--accent-color) !important;
+  color: white !important;
+  text-transform: none !important;
+}
+
+.site-details-button:hover {
+  background-color: var(--accent-dark) !important;
+}
+
+/* Site card styles for dashboard */
+.site-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.site-card-title {
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+.site-card-content {
+  flex: 1;
+  padding: 16px;
+}
+
+.site-card-footer {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Equipment status indicators */
+.equipment-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.status-indicator.ok {
+  background-color: var(--success-color);
+}
+
+.status-indicator.warning {
+  background-color: var(--warning-color);
+}
+
+.status-indicator.major {
+  background-color: var(--accent-color);
+}
+
+.status-indicator.critical {
+  background-color: var(--error-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: 16px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+}

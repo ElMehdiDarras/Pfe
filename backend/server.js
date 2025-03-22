@@ -1,60 +1,64 @@
-// backend/server.js or backend/app.js
+// server.js
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const { initSocketServer } = require('./services/socketService');
+const socketService = require('./services/socketService');
+const ModbusPoller = require('./services/modbusPoller');
+require('dotenv').config();
+
+// Import routes
 const authRoutes = require('./routes/auth');
 const siteRoutes = require('./routes/sites');
 const alarmRoutes = require('./routes/alarms');
 const notificationRoutes = require('./routes/notifications');
-const { auth } = require('./middleware/auth');
-require('dotenv').config();
+// Remove the userRoutes import that doesn't exist
 
-// Initialize express app
+// Create Express app
 const app = express();
 
 // Create HTTP server
 const server = http.createServer(app);
 
-// Initialize socket server
-const io = initSocketServer(server);
-
-// Make io available to routes
-app.set('io', io);
-
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:5000',
+  credentials: true
+}));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Routes
+// Apply routes
 app.use('/api/auth', authRoutes);
-app.use('/api/sites', auth, siteRoutes);
-app.use('/api/alarms', auth, alarmRoutes);
-app.use('/api/notifications', auth, notificationRoutes);
+app.use('/api/sites', siteRoutes);
+app.use('/api/alarms', alarmRoutes);
+app.use('/api/notifications', notificationRoutes);
+// Remove the users route that doesn't exist
 
-// Test route
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API is working' });
-});
+// Initialize Socket.IO
+const io = socketService.initSocketServer(server);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    error: 'Server error', 
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined 
-  });
-});
+// Create Modbus poller instance
+const modbusPoller = new ModbusPoller(io);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
+  .then(async () => {
     console.log('Connected to MongoDB');
     
-    // Start server
-    const PORT = process.env.PORT || 5000;
+    // Initialize Modbus polling for all boxes
+    const Site = require('./models/sites');
+    const sites = await Site.find().lean();
+    
+    for (const site of sites) {
+      if (site.boxes && site.boxes.length > 0) {
+        for (const box of site.boxes) {
+          await modbusPoller.startPolling(site, box);
+        }
+      }
+    }
+    
+    // Start the server
+    const PORT = process.env.PORT || 5001;
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
@@ -64,10 +68,37 @@ mongoose.connect(process.env.MONGODB_URI)
     process.exit(1);
   });
 
-// Handle process termination
-process.on('SIGINT', () => {
-  mongoose.connection.close(() => {
-    console.log('MongoDB connection closed');
+// Handle graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  
+  // Stop Modbus polling
+  modbusPoller.stopAll();
+  
+  // Close MongoDB connection
+  await mongoose.connection.close();
+  console.log('MongoDB connection closed');
+  
+  // Close HTTP server
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down gracefully');
+  
+  // Stop Modbus polling
+  modbusPoller.stopAll();
+  
+  // Close MongoDB connection
+  await mongoose.connection.close();
+  console.log('MongoDB connection closed');
+  
+  // Close HTTP server
+  server.close(() => {
+    console.log('HTTP server closed');
     process.exit(0);
   });
 });

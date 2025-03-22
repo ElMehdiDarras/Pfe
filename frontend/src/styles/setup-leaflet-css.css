@@ -1,0 +1,116 @@
+/* src/styles/setup-leaflet-css.css */
+
+/* Fix Leaflet marker icon positioning */
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.custom-div-icon {
+  background: transparent;
+  border: none;
+}
+
+/* Fix popup styles to match your design */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  padding: 0;
+  min-width: 200px;
+}
+
+.leaflet-popup-tip {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Style for the custom site marker popup "See more" link */
+.site-details-link {
+  color: #0088cc; 
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.site-details-link:hover {
+  text-decoration: underline;
+}
+
+/* Ensure markers appear in front of labels on map */
+.leaflet-marker-pane {
+  z-index: 610 !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 620 !important;
+}
+
+/* Site popup styles */
+.site-popup-content {
+  padding: 16px;
+}
+
+.site-popup-title {
+  font-weight: 600 !important;
+  margin-bottom: 12px !important;
+  color: #2c4c7c;
+}
+
+.site-popup-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.site-popup-info {
+  margin-bottom: 4px !important;
+}
+
+.site-popup-actions {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.site-details-button {
+  background-color: #FF5722 !important;
+  color: white !important;
+  text-transform: none !important;
+}
+
+.site-details-button:hover {
+  background-color: #E64A19 !important;
+}
+
+/* Status styles for chips */
+.status-chip.critical-chip {
+  background-color: #F44336 !important;
+  color: white !important;
+}
+
+.status-chip.major-chip {
+  background-color: #FF9800 !important;
+  color: black !important;
+}
+
+.status-chip.warning-chip {
+  background-color: #FFC107 !important;
+  color: black !important;
+}
+
+.status-chip.ok-chip {
+  background-color: #4CAF50 !important;
+  color: white !important;
+}
+
+/* Map container styling */
+.map-container {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}

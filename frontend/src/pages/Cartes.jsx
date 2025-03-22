@@ -1,193 +1,163 @@
 // src/pages/Cartes.jsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Typography,
   Box,
-  Paper,
   Grid,
   Card,
-  CardHeader,
   CardContent,
+  CardHeader,
+  Paper,
   Divider,
-  Chip,
   CircularProgress,
-  Alert
+  Alert,
+  Button
 } from '@mui/material';
 import { useSites } from '../hooks/useSites';
 import SiteMapView from './SiteMapView';
 
-// Equipment diagram component
-const EquipmentDiagram = ({ site }) => {
-  const getEquipmentStatus = (type) => {
-    const equipment = site.equipment?.filter(e => e.type && e.type.includes(type)) || [];
-    
-    if (equipment.length === 0) return 'OK';
-    
-    if (equipment.some(e => e.status === 'CRITICAL')) return 'CRITICAL';
-    if (equipment.some(e => e.status === 'MAJOR')) return 'MAJOR';
-    if (equipment.some(e => e.status === 'WARNING')) return 'WARNING';
-    
-    return 'OK';
-  };
-  
-  const getStatusIndicator = (status) => {
-    let bgColor;
-    
-    switch (status) {
-      case 'CRITICAL':
-        bgColor = '#f44336';
-        break;
-      case 'MAJOR':
-        bgColor = '#ff9800';
-        break;
-      case 'WARNING':
-        bgColor = '#ffeb3b';
-        break;
-      case 'OK':
-        bgColor = '#4caf50';
-        break;
-      default:
-        bgColor = '#9e9e9e';
-    }
-    
-    return (
-      <Box
-        sx={{
-          width: 16,
-          height: 16,
-          borderRadius: '50%',
-          bgcolor: bgColor,
-          border: '1px solid white',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-          mx: 'auto',
-          my: 1
-        }}
-      />
-    );
-  };
-
-  // Equipment types based on your data model
-  const equipmentTypes = ['Armoire électrique', 'Climatiseurs', 'Thermostat'];
-  
-  const statusCounts = {
-    criticals: site.equipment?.filter(e => e.status === 'CRITICAL').length || 0,
-    majors: site.equipment?.filter(e => e.status === 'MAJOR').length || 0,
-    warnings: site.equipment?.filter(e => e.status === 'WARNING').length || 0
-  };
-  
-  const getStatusChip = () => {
-    if (statusCounts.criticals > 0) {
-      return <Chip 
-        label={`${statusCounts.criticals} Alarmes`} 
-        color="error" 
-        size="small"
-      />;
-    }
-    
-    if (statusCounts.majors > 0) {
-      return <Chip 
-        label={`${statusCounts.majors} Alarmes`} 
-        color="warning" 
-        size="small"
-      />;
-    }
-    
-    if (statusCounts.warnings > 0) {
-      return <Chip 
-        label={`${statusCounts.warnings} Alarmes`} 
-        sx={{ bgcolor: '#ffeb3b', color: 'black' }} 
-        size="small"
-      />;
-    }
-    
-    return <Chip 
-      label="Tous les systèmes OK" 
-      color="success" 
-      size="small"
-    />;
-  };
-
-  return (
-    <Card>
-      <CardHeader
-        title={site.name}
-        titleTypographyProps={{ variant: 'h6', sx: { fontSize: '1rem' } }}
-        action={getStatusChip()}
-      />
-      <Divider />
-      <CardContent sx={{ p: 1 }}>
-        <Grid container spacing={1}>
-          {equipmentTypes.map((type) => {
-            const status = getEquipmentStatus(type);
-            return (
-              <Grid item xs={4} key={type}>
-                <Box sx={{ 
-                  p: 1, 
-                  textAlign: 'center',
-                  bgcolor: '#f5f5f5',
-                  height: '100%',
-                  border: '1px solid #eee'
-                }}>
-                  <Typography variant="body2" sx={{ fontSize: '0.8rem', mb: 1 }}>
-                    {type}
-                  </Typography>
-                  {getStatusIndicator(status)}
-                </Box>
-              </Grid>
-            );
-          })}
-        </Grid>
-        <Typography variant="caption" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
-          {site.location} | VLAN: {site.vlan || 'N/A'} | {site.equipment?.length || 0} équipements
-        </Typography>
-      </CardContent>
-    </Card>
-  );
-};
-
 const Cartes = () => {
+  const navigate = useNavigate();
+  const [selectedSite, setSelectedSite] = useState(null);
   const { data: sites, isLoading, error } = useSites();
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return <Alert severity="error">Erreur de chargement des données: {error.message}</Alert>;
-  }
-
+  
+  // Handle site click from map
+  const handleSiteClick = (site) => {
+    if (site && site.id) {
+      navigate(`/SiteDetail/${site.id}`);
+    } else if (site && site.name) {
+      // If we don't have an ID but have a name, try using the name as ID
+      const siteId = site.name.replace(/\s+/g, '-');
+      navigate(`/SiteDetail/${siteId}`);
+    }
+  };
+  
   return (
-    <>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'medium' }}>
-        Cartes des Sites
+    <div className="content-wrapper">
+      <Typography variant="h4" className="page-title">
+        Carte Globale des Sites
       </Typography>
-
-      {/* Global Map */}
-      <Paper sx={{ mb: 4, p: 2, borderRadius: 1 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 'medium', fontSize: '1.1rem' }}>
-          Carte Globale des Sites
-        </Typography>
-        {/* Using our improved map component */}
-        <SiteMapView sites={sites || []} height={500} />
-      </Paper>
-
-      {/* Site diagrams */}
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 'medium', fontSize: '1.2rem' }}>
-        Diagrammes de Sites
-      </Typography>
-
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {sites?.map((site) => (
-          <Grid item xs={12} sm={6} md={4} key={site.id || site._id}>
-            <EquipmentDiagram site={site} />
+      
+      <Grid container spacing={3}>
+        {/* Map Container */}
+        <Grid item xs={12}>
+          <Paper elevation={0} className="card">
+            <Box sx={{ position: 'relative', height: 500 }}>
+              {isLoading ? (
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center',
+                  height: '100%' 
+                }}>
+                  <CircularProgress />
+                </Box>
+              ) : error ? (
+                <Box sx={{ p: 3 }}>
+                  <Alert severity="error">
+                    Erreur lors du chargement de la carte: {error.message}
+                  </Alert>
+                </Box>
+              ) : (
+                <SiteMapView 
+                  sites={sites} 
+                  height={500} 
+                  settings={{ 
+                    onSiteClick: handleSiteClick,
+                  }} 
+                />
+              )}
+            </Box>
+          </Paper>
+        </Grid>
+        
+        {/* Site Status Grid */}
+        <Grid item xs={12}>
+          <Typography variant="h5" gutterBottom sx={{ mt: 3, mb: 2 }}>
+            État des Sites
+          </Typography>
+          
+          <Grid container spacing={2}>
+            {isLoading ? (
+              <Grid item xs={12} sx={{ textAlign: 'center', py: 4 }}>
+                <CircularProgress />
+              </Grid>
+            ) : error ? (
+              <Grid item xs={12}>
+                <Alert severity="error">
+                  Erreur lors du chargement des sites: {error.message}
+                </Alert>
+              </Grid>
+            ) : sites && sites.length > 0 ? (
+              sites.map(site => (
+                <Grid item xs={12} sm={6} md={4} key={site.id || site.name}>
+                  <Card 
+                    className={`card site-card ${site.status?.toLowerCase() || 'ok'}-card`}
+                    onClick={() => handleSiteClick(site)}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <Box className="site-card-header">
+                      <Typography variant="h6" className="site-card-title">
+                        {site.name}
+                      </Typography>
+                      <Box 
+                        className={`status-indicator ${site.status?.toLowerCase() || 'ok'}`}
+                        sx={{ width: 14, height: 14 }}
+                      />
+                    </Box>
+                    
+                    <CardContent className="site-card-content">
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Location: {site.location}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        VLAN: {site.vlan || 'N/A'}
+                      </Typography>
+                      
+                      <Divider sx={{ my: 1.5 }} />
+                      
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2">
+                          Alarmes actives:
+                        </Typography>
+                        <Typography 
+                          variant="body2" 
+                          fontWeight="bold"
+                          color={site.activeAlarms > 0 ? 'error.main' : 'success.main'}
+                        >
+                          {site.activeAlarms || 0}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                    
+                    <Box className="site-card-footer">
+                      <Typography variant="caption" color="text.secondary">
+                        {site.equipment ? `${site.equipment.length} équipements` : ''}
+                      </Typography>
+                      
+                      <Button 
+                        size="small" 
+                        className="site-details-button"
+                        sx={{ minWidth: 'auto' }}
+                      >
+                        Détails
+                      </Button>
+                    </Box>
+                  </Card>
+                </Grid>
+              ))
+            ) : (
+              <Grid item xs={12}>
+                <Alert severity="info">
+                  Aucun site disponible
+                </Alert>
+              </Grid>
+            )}
           </Grid>
-        ))}
+        </Grid>
       </Grid>
-    </>
+    </div>
   );
 };
 

@@ -1,0 +1,105 @@
+/* src/styles/site-detail.css */
+/* Add this to your global.css or import it separately */
+
+/* Site detail page specific styles */
+.site-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+}
+
+.site-title {
+  font-weight: 500;
+  color: var(--primary-color);
+  margin-bottom: 4px;
+}
+
+.site-subtitle {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+}
+
+/* Detail panels */
+.detail-panel {
+  padding: 0 !important;
+}
+
+.panel-title {
+  padding: 16px;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.panel-content {
+  padding: 16px;
+}
+
+/* Architecture section */
+.architecture-container {
+  padding: 24px;
+  text-align: center;
+}
+
+.architecture-image {
+  max-width: 100%;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.architecture-placeholder {
+  width: 100%;
+  height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  margin-bottom: 24px;
+}
+
+.architecture-description {
+  text-align: left;
+  margin: 24px 0;
+}
+
+.architecture-list {
+  text-align: left;
+  padding-left: 24px;
+}
+
+.architecture-list li {
+  margin-bottom: 8px;
+}
+
+/* Status table styling */
+.status-table th {
+  font-weight: 500;
+  width: 40%;
+  color: var(--primary-color);
+}
+
+/* Tab styling enhancement */
+.site-tabs .MuiTab-root {
+  text-transform: none;
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.site-tabs .MuiTab-root.Mui-selected {
+  color: var(--accent-color);
+}
+
+.site-tabs .MuiTabs-indicator {
+  background-color: var(--accent-color);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .site-tabs .MuiTab-root {
+    min-width: auto;
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+}

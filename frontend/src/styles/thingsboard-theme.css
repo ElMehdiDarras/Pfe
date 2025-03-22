@@ -1,0 +1,96 @@
+/* src/styles/thingsboard-theme.css */
+
+:root {
+    /* ThingsBoard color palette */
+    --primary-color: #2c4c7c;         /* Dark blue - primary background */
+    --primary-light: #4b6fa0;         /* Lighter blue for hover states */
+    --primary-dark: #1a3a6a;          /* Darker blue for active states */
+    --accent-color: #FF5722;          /* Orange - for buttons and highlights */
+    --accent-light: #FF8A65;          /* Lighter orange for hover effects */
+    --accent-dark: #E64A19;           /* Darker orange for active states */
+    --text-primary: #FFFFFF;          /* White text on dark backgrounds */
+    --text-secondary: rgba(255, 255, 255, 0.7); /* Slightly transparent white for secondary text */
+    --error-color: #F44336;           /* Red for errors */
+    --success-color: #4CAF50;         /* Green for success */
+    --warning-color: #FFC107;         /* Yellow for warnings */
+    --background-color: #f5f5f5;      /* Light gray for main background */
+    --paper-color: #FFFFFF;           /* White for paper elements */
+    --divider-color: rgba(0, 0, 0, 0.12); /* Light divider color */
+  }
+  
+  /* Apply ThingsBoard style to specific MUI components */
+  .MuiButton-containedPrimary {
+    background-color: var(--accent-color) !important;
+  }
+  
+  .MuiButton-containedPrimary:hover {
+    background-color: var(--accent-dark) !important;
+  }
+  
+  .thingsboard-login-paper {
+    background-color: var(--primary-color) !important;
+    color: var(--text-primary) !important;
+  }
+  
+  /* Custom login page background */
+  .login-page {
+    background-color: var(--background-color);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Styling for the login container */
+  .login-container {
+    width: 100%;
+    max-width: 450px;
+    border-radius: 4px;
+  }
+  
+  /* Login form text fields */
+  .login-text-field .MuiOutlinedInput-root {
+    color: var(--text-primary);
+  }
+  
+  .login-text-field .MuiOutlinedInput-root fieldset {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .login-text-field .MuiOutlinedInput-root:hover fieldset {
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+  
+  .login-text-field .MuiOutlinedInput-root.Mui-focused fieldset {
+    border-color: rgba(255, 255, 255, 0.7);
+  }
+  
+  /* Login button */
+  .login-button {
+    background-color: var(--accent-color) !important;
+    box-shadow: none !important;
+  }
+  
+  .login-button:hover {
+    background-color: var(--accent-dark) !important;
+  }
+  
+  /* Links */
+  .login-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+  
+  .login-link:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+  }
+  
+  /* Copyright footer */
+  .copyright-footer {
+    margin-top: 2rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    text-align: center;
+  }

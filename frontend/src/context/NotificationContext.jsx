@@ -1,102 +1,35 @@
-// src/context/NotificationContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import alarmService from '../api/services/alarmService';
+// In src/context/NotificationContext.jsx
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useSocket } from './SocketContext';
-import { useAuth } from './AuthContext';
+import alarmService from '../api/services/alarmService';
 
-// Create context
-const NotificationContext = createContext(null);
+const NotificationContext = createContext();
 
-// Provider component
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const { lastMessage } = useSocket();
-  const { user } = useAuth();
-
-  // Fetch initial notifications
-  const fetchNotifications = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const data = await alarmService.getNotifications();
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.read).length);
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
-      setError(err.message || 'Failed to load notifications');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Fetch notification count
-  const fetchNotificationCount = async () => {
-    if (!user) return;
-    
-    try {
-      const data = await alarmService.getNotificationCount();
-      setUnreadCount(data.count);
-    } catch (err) {
-      console.error('Error fetching notification count:', err);
-    }
-  };
-
-  // Mark notification as read
-  const markAsRead = async (notificationId) => {
-    try {
-      await alarmService.markNotificationAsRead(notificationId);
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(n => 
-          n.id === notificationId ? { ...n, read: true } : n
-        )
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
-    }
-  };
-
-  // Mark all notifications as read
-  const markAllAsRead = async () => {
-    try {
-      await alarmService.markAllNotificationsAsRead();
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, read: true }))
-      );
-      setUnreadCount(0);
-    } catch (err) {
-      console.error('Error marking all notifications as read:', err);
-    }
-  };
-
-  // Fetch notifications on mount and when user changes
+  const { socket, lastMessage } = useSocket();
+  
+  // Fetch notifications when component mounts
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      
-      // Set up refresh interval
-      const intervalId = setInterval(fetchNotificationCount, 30000);
-      
-      return () => clearInterval(intervalId);
-    }
-  }, [user]);
-
-  // Handle real-time notifications
+    fetchNotifications();
+    fetchUnreadCount();
+    
+    // Set up interval to refresh counts
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 30000); // Every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Listen for new notifications via socket
   useEffect(() => {
-    if (lastMessage?.type === 'notification') {
+    if (lastMessage && lastMessage.type === 'notification') {
+      // Add new notification to the list
       const newNotification = lastMessage.data;
       
-      // Add to notifications list if not already present
+      // Check if it's not already in the list
       setNotifications(prev => {
         if (!prev.some(n => n.id === newNotification.id)) {
           return [newNotification, ...prev];
@@ -105,35 +38,92 @@ export const NotificationProvider = ({ children }) => {
       });
       
       // Update unread count
-      if (!newNotification.read) {
-        setUnreadCount(prev => prev + 1);
-      }
+      fetchUnreadCount();
     }
   }, [lastMessage]);
-
-  // Context value
-  const value = {
-    notifications,
-    unreadCount,
-    isLoading,
-    error,
-    markAsRead,
-    markAllAsRead,
-    refresh: fetchNotifications
+  
+  // Fetch notifications from API
+  const fetchNotifications = async () => {
+    try {
+      // Check if the function exists before calling it
+      if (typeof alarmService.getNotifications === 'function') {
+        const data = await alarmService.getNotifications(20);
+        setNotifications(data || []);
+      } else {
+        console.error('getNotifications function is not defined in alarmService');
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
   };
-
+  
+  // Fetch unread notification count
+  const fetchUnreadCount = async () => {
+    try {
+      // Check if the function exists before calling it
+      if (typeof alarmService.getNotificationCount === 'function') {
+        const data = await alarmService.getNotificationCount();
+        setUnreadCount(data?.count || 0);
+      } else {
+        console.error('getNotificationCount function is not defined in alarmService');
+      }
+    } catch (error) {
+      console.error('Error fetching notification count:', error);
+    }
+  };
+  
+  // Mark notification as read
+  const markAsRead = async (notificationId) => {
+    try {
+      await alarmService.markNotificationAsRead(notificationId);
+      
+      // Update local state
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, read: true } 
+            : notification
+        )
+      );
+      
+      // Update unread count
+      fetchUnreadCount();
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+  
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    try {
+      await alarmService.markAllNotificationsAsRead();
+      
+      // Update local state
+      setNotifications(prev => 
+        prev.map(notification => ({ ...notification, read: true }))
+      );
+      
+      // Update unread count
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+  
   return (
-    <NotificationContext.Provider value={value}>
+    <NotificationContext.Provider 
+      value={{ 
+        notifications, 
+        unreadCount, 
+        markAsRead, 
+        markAllAsRead, 
+        refreshNotifications: fetchNotifications,
+        refreshUnreadCount: fetchUnreadCount
+      }}
+    >
       {children}
     </NotificationContext.Provider>
   );
 };
 
-// Custom hook to use notification context
-export const useNotificationContext = () => {
-  const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error('useNotificationContext must be used within a NotificationProvider');
-  }
-  return context;
-};
+export const useNotifications = () => useContext(NotificationContext);

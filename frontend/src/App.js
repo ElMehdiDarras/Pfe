@@ -1,17 +1,27 @@
-// src/App.js with QueryClientProvider and updated routing
+// src/App.js with ThingsBoard theme and proper layout
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-// Add QueryClient imports
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Import theme
+import thingsboardTheme from './theme/thingboardtheme';
+
+import 'leaflet/dist/leaflet.css';
+import './styles/thingsboard-theme.css';
+import './styles/dashboard-cards.css';
+import './styles/setup-leaflet-css.css';
+import './styles/global.css';
 // Contexts
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { NotificationProvider } from './context/NotificationContext';
+
 // Components
-import ProtectedRoute from './routes/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
+import ProtectedRoute from './routes/ProtectedRoute';
+
 // Pages
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
@@ -37,36 +47,9 @@ const queryClient = new QueryClient({
   },
 });
 
-// Create theme
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#9c27b0',
-    },
-    error: {
-      main: '#f44336',
-    },
-    warning: {
-      main: '#ff9800',
-    },
-    info: {
-      main: '#2196f3',
-    },
-    success: {
-      main: '#4caf50',
-    },
-    background: {
-      default: '#f5f5f5',
-    },
-  },
-});
-
 function App() {
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={thingsboardTheme}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
@@ -75,9 +58,6 @@ function App() {
               <Router>
                 <Routes>
                   <Route path="/login" element={<Login />} />
-                  <Route path="/unauthorized" element={<Unauthorized />} />
-                  
-                  {/* Protected routes using MainLayout */}
                   <Route
                     path="/"
                     element={
@@ -96,6 +76,7 @@ function App() {
                     <Route path="UserManagement" element={<UserManagement />} />
                     <Route path="Historique" element={<Historique />} />
                     <Route path="Profile" element={<Profile />} />
+                    <Route path="Unauthorized" element={<Unauthorized />} />
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>

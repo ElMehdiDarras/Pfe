@@ -2,7 +2,9 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/notifications');
+const { auth } = require('../middleware/auth');
 
+router.use(auth);
 /**
  * @route GET /api/notifications
  * @desc Get user notifications
@@ -32,6 +34,11 @@ router.get('/', async (req, res) => {
  */
 router.get('/count', async (req, res) => {
   try {
+    // Check if user is defined
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
     // Count unread notifications for the current user
     const count = await Notification.countDocuments({ 
       userId: req.user._id,

@@ -25,7 +25,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import InfoIcon from '@mui/icons-material/Info';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import alarmService from '/home/mhdi/Desktop/alarm-monitoring-system/frontend/src/api/services/alarmService.js';
+import alarmService from '../../api/services/alarmService';
 import { useSocket } from '../../context/SocketContext';
 
 const NotificationBell = () => {
@@ -37,7 +37,7 @@ const NotificationBell = () => {
   const [notification, setNotification] = useState(null);
 
   // Fetch active alarms
-  const { data: alarms, isLoading, error } = useQuery({
+  const { data: alarms = [], isLoading, error } = useQuery({
     queryKey: ['alarms', 'active'],
     queryFn: alarmService.getActiveAlarms,
     refetchInterval: 30000, // Refetch every 30 seconds
@@ -63,10 +63,10 @@ const NotificationBell = () => {
   useEffect(() => {
     if (lastMessage?.type === 'alarm-status-change') {
       // Show notification for critical and major alarms
-      if (['CRITICAL', 'MAJOR'].includes(lastMessage.data.status)) {
+      if (['CRITICAL', 'MAJOR'].includes(lastMessage.data?.status)) {
         setNotification({
           severity: lastMessage.data.status === 'CRITICAL' ? 'error' : 'warning',
-          message: `${lastMessage.data.siteId}: ${lastMessage.data.equipment} - ${lastMessage.data.description}`
+          message: `${lastMessage.data.siteId || ''}: ${lastMessage.data.equipment || ''} - ${lastMessage.data.description || ''}`
         });
         
         // Play sound for critical alarms
@@ -94,9 +94,18 @@ const NotificationBell = () => {
     setAnchorEl(null);
   };
 
-  const handleAcknowledgeAlarm = (alarmId, event) => {
-    event.stopPropagation();
-    acknowledgeMutation.mutate(alarmId);
+  // Fixed to receive the alarm ID directly
+  const handleAcknowledge = (alarmId, event) => {
+    // Stop propagation to prevent navigating to site detail
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    if (alarmId) {
+      acknowledgeMutation.mutate(alarmId);
+    } else {
+      console.error('Cannot acknowledge: No alarm ID provided');
+    }
   };
 
   const handleAcknowledgeAll = () => {
@@ -129,6 +138,8 @@ const NotificationBell = () => {
 
   // Format time since (e.g., "2 hours ago")
   const formatTimeSince = (dateString) => {
+    if (!dateString) return '';
+    
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
@@ -203,10 +214,10 @@ const NotificationBell = () => {
           </Box>
         ) : (
           <List sx={{ p: 0 }}>
-            {alarms?.map((alarm) => {
+            {alarms.map((alarm) => {
               const { icon, color } = getStatusInfo(alarm.status);
               return (
-                <React.Fragment key={alarm._id}>
+                <React.Fragment key={alarm._id || `alarm-${alarm.siteId}-${alarm.pinId}-${alarm.timestamp}`}>
                   <ListItem 
                     button 
                     onClick={() => handleAlarmClick(alarm.siteId)}
@@ -223,7 +234,7 @@ const NotificationBell = () => {
                       primary={
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Typography variant="body2" fontWeight="medium">
-                            {alarm.siteId}
+                            {alarm.siteId || 'Site inconnu'}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {formatTimeSince(alarm.timestamp)}
@@ -233,12 +244,12 @@ const NotificationBell = () => {
                       secondary={
                         <>
                           <Typography variant="body2" component="span">
-                            {alarm.equipment}: {alarm.description}
+                            {alarm.equipment || 'Équipement inconnu'}: {alarm.description || 'Aucune description'}
                           </Typography>
                           {!alarm.acknowledgedBy && (
                             <Button
                               size="small"
-                              onClick={(e) => handleAcknowledgeAlarm(alarm._id, e)}
+                              onClick={(e) => handleAcknowledge(alarm._id, e)}
                               sx={{ mt: 1, fontSize: '0.7rem' }}
                             >
                               Acquitter
@@ -269,9 +280,11 @@ const NotificationBell = () => {
         onClose={() => setNotification(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Alert severity={notification?.severity || 'info'} sx={{ width: '100%' }}>
-          {notification?.message}
-        </Alert>
+        {notification && (
+          <Alert severity={notification.severity || 'info'} sx={{ width: '100%' }}>
+            {notification.message}
+          </Alert>
+        )}
       </Snackbar>
     </>
   );

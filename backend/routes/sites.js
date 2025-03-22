@@ -30,36 +30,40 @@ router.get('/', auth, async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve sites' });
   }
 });
-// Get sites with status summary
+// In routes/sites.js
 router.get('/summary', async (req, res) => {
   try {
-    const sites = await Site.getSitesWithStatus();
+    let sitesQuery = {};
     
-    // For each site, get active alarm count
-    const sitesWithAlarmCount = await Promise.all(
-      sites.map(async (site) => {
-        const activeAlarms = await Alarm.countDocuments({
-          siteId: site.name,
-          status: { $ne: 'OK' },
-          resolvedAt: null
-        });
-        
-        // Convert Mongoose document to plain object and add alarm count
-        const siteObj = site.toObject();
-        siteObj.activeAlarms = activeAlarms;
-        // Add id field for frontend compatibility
-        siteObj.id = site.name.replace(/\s+/g, '-');
-        return siteObj;
-      })
-    );
+    // If user is an agent, only return their assigned sites
+    if (req.user && req.user.role === 'agent') {
+      sitesQuery = { name: { $in: req.user.sites } };
+    }
     
-    res.json(sitesWithAlarmCount);
+    // Get full site data including boxes and equipment arrays
+    const sites = await Site.find(sitesQuery);
+    
+    // Transform the data with explicit counts
+    const sitesWithCounts = sites.map(site => {
+      // Convert Mongoose document to plain object
+      const siteObj = site.toObject();
+      
+      // Add explicit counts
+      siteObj.boxCount = site.boxes ? site.boxes.length : 0;
+      siteObj.equipmentCount = site.equipment ? site.equipment.length : 0;
+      
+      // Add id field for frontend compatibility
+      siteObj.id = site.name.replace(/\s+/g, '-');
+      
+      return siteObj;
+    });
+    
+    res.json(sitesWithCounts);
   } catch (error) {
     console.error('Error getting site summary:', error);
     res.status(500).json({ error: 'Failed to retrieve site summary' });
   }
 });
-
 // Get a specific site
 router.get('/:id', auth, async (req, res) => {
   try {

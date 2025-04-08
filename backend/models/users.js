@@ -1,3 +1,4 @@
+// models/users.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -23,6 +24,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address']
+  },
+  phoneNumber: {
+    type: String,
+    trim: true
+  },
   role: {
     type: String,
     enum: ['agent', 'supervisor', 'administrator'],
@@ -32,6 +43,29 @@ const userSchema = new mongoose.Schema({
   sites: [{
     type: String  // Site names (e.g., "Rabat-Hay NAHDA", "Rabat-SEOKARNO", etc.)
   }],
+  // For notifications preferences
+  notificationPreferences: {
+    email: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      criticalOnly: {
+        type: Boolean,
+        default: true
+      }
+    },
+    sms: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      criticalOnly: {
+        type: Boolean,
+        default: true
+      }
+    }
+  },
   // For audit and security
   lastLogin: {
     type: Date,
@@ -52,6 +86,7 @@ const userSchema = new mongoose.Schema({
 // Index for efficient queries
 userSchema.index({ username: 1 });
 userSchema.index({ role: 1 });
+userSchema.index({ email: 1 });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Site = require('../models/sites');
 const Alarm = require('../models/alarm');
-const { auth } = require('../middleware/auth');
+const { auth, isAdmin, isSupervisorOrAdmin, hasSiteAccess } = require('../middleware/auth');
+const BoxStateManager = require('../utils/boxStateManager');
 
 // Get all sites
 router.get('/', auth, async (req, res) => {
@@ -30,7 +31,8 @@ router.get('/', auth, async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve sites' });
   }
 });
-// In routes/sites.js
+
+// Get site summary
 router.get('/summary', async (req, res) => {
   try {
     let sitesQuery = {};
@@ -52,6 +54,13 @@ router.get('/summary', async (req, res) => {
       siteObj.boxCount = site.boxes ? site.boxes.length : 0;
       siteObj.equipmentCount = site.equipment ? site.equipment.length : 0;
       
+      // Add box state counts
+      siteObj.boxStats = {
+        up: site.boxes ? site.boxes.filter(box => box.status === 'UP').length : 0,
+        down: site.boxes ? site.boxes.filter(box => box.status === 'DOWN').length : 0,
+        unreachable: site.boxes ? site.boxes.filter(box => box.status === 'UNREACHABLE').length : 0
+      };
+      
       // Add id field for frontend compatibility
       siteObj.id = site.name.replace(/\s+/g, '-');
       
@@ -64,8 +73,64 @@ router.get('/summary', async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve site summary' });
   }
 });
+
+// Get box states for a site
+router.get('/:id/boxes/states', auth, hasSiteAccess, async (req, res) => {
+  try {
+    const site = await Site.findById(req.params.id);
+    if (!site) {
+      // Try by name if ID lookup fails
+      const nameFromId = req.params.id.replace(/-/g, ' ');
+      site = await Site.findOne({ name: nameFromId });
+      
+      if (!site) {
+        return res.status(404).json({ error: 'Site not found' });
+      }
+    }
+    
+    // Transform box data with additional state information
+    const boxStates = site.boxes.map(box => ({
+      id: box._id,
+      name: box.name,
+      ip: box.ip,
+      port: box.port,
+      status: box.status,
+      lastSeen: box.lastSeen,
+      protocol: box.protocol || 'BF2300'
+    }));
+    
+    res.json(boxStates);
+  } catch (error) {
+    console.error(`Error getting box states for site ${req.params.id}:`, error);
+    res.status(500).json({ error: 'Failed to retrieve box states' });
+  }
+});
+
+// Get all box health states
+router.get('/boxes/health', auth, isSupervisorOrAdmin, async (req, res) => {
+  try {
+    const boxStates = await BoxStateManager.getAllBoxStates();
+    
+    // Group by state
+    const summary = {
+      UP: boxStates.filter(b => b.status === 'UP').length,
+      DOWN: boxStates.filter(b => b.status === 'DOWN').length,
+      UNREACHABLE: boxStates.filter(b => b.status === 'UNREACHABLE').length,
+      total: boxStates.length
+    };
+    
+    res.json({
+      summary,
+      boxes: boxStates
+    });
+  } catch (error) {
+    console.error('Error getting box health:', error);
+    res.status(500).json({ error: 'Failed to retrieve box health' });
+  }
+});
+
 // Get a specific site
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, hasSiteAccess, async (req, res) => {
   try {
     // Try finding by MongoDB _id first
     let site = null;
@@ -94,14 +159,6 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: 'Site not found' });
     }
     
-    // Check if agent has access to this site
-    if (req.user.role === 'agent' && !req.user.sites.includes(site.name)) {
-      return res.status(403).json({ error: 'You do not have access to this site' });
-    }
-    
-    // Continue with the rest of your code...
-    // ...
-    
     res.json(site);
   } catch (error) {
     console.error(`Error getting site ${req.params.id}:`, error);
@@ -110,7 +167,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Get site by name
-router.get('/name/:name', async (req, res) => {
+router.get('/name/:name', auth, hasSiteAccess, async (req, res) => {
   try {
     const site = await Site.findOne({ name: req.params.name });
     if (!site) {
@@ -136,18 +193,45 @@ router.get('/name/:name', async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve site' });
   }
 });
-// Add to your routes/sites.js file on the backend
-router.get('/debug-ids', auth, async (req, res) => {
+
+// Debugging endpoint to check box health
+router.get('/debug/box-states', auth, isAdmin, async (req, res) => {
   try {
-    const sites = await Site.find({}).select('_id id name');
-    res.json(sites);
+    const sites = await Site.find().select('name boxes');
+    
+    // Collect all box states
+    const boxStates = [];
+    sites.forEach(site => {
+      site.boxes.forEach(box => {
+        boxStates.push({
+          siteId: site.name,
+          boxId: box._id,
+          boxName: box.name,
+          ip: box.ip,
+          port: box.port,
+          status: box.status,
+          lastSeen: box.lastSeen
+        });
+      });
+    });
+    
+    res.json({
+      totalBoxes: boxStates.length,
+      byState: {
+        UP: boxStates.filter(b => b.status === 'UP').length,
+        DOWN: boxStates.filter(b => b.status === 'DOWN').length,
+        UNREACHABLE: boxStates.filter(b => b.status === 'UNREACHABLE').length
+      },
+      boxes: boxStates
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error getting box debug info:', error);
+    res.status(500).json({ error: 'Failed to retrieve box debug info' });
   }
 });
 
 // Create a new site
-router.post('/', async (req, res) => {
+router.post('/', auth, isAdmin, async (req, res) => {
   try {
     // Validate the request body
     if (!req.body.name || !req.body.location) {
@@ -184,7 +268,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update a site
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, isAdmin, async (req, res) => {
   try {
     // Don't allow name changes if it would create a duplicate
     if (req.body.name) {
@@ -228,9 +312,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Rest of the file remains the same
 // Add a box to a site
-router.post('/:id/boxes', async (req, res) => {
+router.post('/:id/boxes', auth, isAdmin, async (req, res) => {
   try {
     const site = await Site.findById(req.params.id);
     if (!site) {
@@ -254,7 +337,15 @@ router.post('/:id/boxes', async (req, res) => {
       return res.status(409).json({ error: 'A box with this IP already exists' });
     }
     
-    site.boxes.push(req.body);
+    // Set default protocol to BF2300
+    const boxData = {
+      ...req.body,
+      protocol: req.body.protocol || 'BF2300',
+      status: 'UNREACHABLE',
+      lastSeen: new Date()
+    };
+    
+    site.boxes.push(boxData);
     await site.save();
     
     // Notify connected clients via socket.io
@@ -277,7 +368,7 @@ router.post('/:id/boxes', async (req, res) => {
 });
 
 // Add equipment to a site
-router.post('/:id/equipment', async (req, res) => {
+router.post('/:id/equipment', auth, isAdmin, async (req, res) => {
   try {
     const site = await Site.findById(req.params.id);
     if (!site) {
@@ -318,7 +409,7 @@ router.post('/:id/equipment', async (req, res) => {
 });
 
 // Update site status based on active alarms
-router.post('/:id/update-status', async (req, res) => {
+router.post('/:id/update-status', auth, async (req, res) => {
   try {
     const site = await Site.findById(req.params.id);
     if (!site) {
@@ -369,7 +460,7 @@ router.post('/:id/update-status', async (req, res) => {
 });
 
 // Update box status
-router.put('/:id/boxes/:boxIndex', async (req, res) => {
+router.put('/:id/boxes/:boxIndex', auth, isAdmin, async (req, res) => {
   try {
     const site = await Site.findById(req.params.id);
     if (!site) {
@@ -403,9 +494,24 @@ router.put('/:id/boxes/:boxIndex', async (req, res) => {
       }
     }
     
+    // Store the old state for notification
+    const oldState = site.boxes[boxIndex].status;
+    
     // Update box fields
     Object.assign(site.boxes[boxIndex], req.body);
     await site.save();
+    
+    // If state changed, notify about it
+    if (oldState !== site.boxes[boxIndex].status) {
+      const boxStateManager = require('../utils/boxStateManager');
+      const io = req.app.get('io');
+      await boxStateManager.updateBoxState(
+        site.name, 
+        site.boxes[boxIndex]._id, 
+        site.boxes[boxIndex].status, 
+        io
+      );
+    }
     
     // Notify connected clients via socket.io
     const io = req.app.get('io');
@@ -428,7 +534,7 @@ router.put('/:id/boxes/:boxIndex', async (req, res) => {
 });
 
 // Update equipment
-router.put('/:id/equipment/:equipIndex', async (req, res) => {
+router.put('/:id/equipment/:equipIndex', auth, isAdmin, async (req, res) => {
   try {
     const site = await Site.findById(req.params.id);
     if (!site) {
@@ -476,7 +582,7 @@ router.put('/:id/equipment/:equipIndex', async (req, res) => {
 });
 
 // Delete a box
-router.delete('/:id/boxes/:boxIndex', async (req, res) => {
+router.delete('/:id/boxes/:boxIndex', auth, isAdmin, async (req, res) => {
   try {
     const site = await Site.findById(req.params.id);
     if (!site) {
@@ -512,7 +618,7 @@ router.delete('/:id/boxes/:boxIndex', async (req, res) => {
 });
 
 // Delete equipment
-router.delete('/:id/equipment/:equipIndex', async (req, res) => {
+router.delete('/:id/equipment/:equipIndex', auth, isAdmin, async (req, res) => {
   try {
     const site = await Site.findById(req.params.id);
     if (!site) {
@@ -548,7 +654,7 @@ router.delete('/:id/equipment/:equipIndex', async (req, res) => {
 });
 
 // Delete a site
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, isAdmin, async (req, res) => {
   try {
     const site = await Site.findById(req.params.id);
     if (!site) {

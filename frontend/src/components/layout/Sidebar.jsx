@@ -22,6 +22,7 @@ import MapIcon from '@mui/icons-material/Map';
 import PersonIcon from '@mui/icons-material/Person';
 import HistoryIcon from '@mui/icons-material/History';
 import PeopleIcon from '@mui/icons-material/People';
+import StorageIcon from '@mui/icons-material/Storage';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { hasPermission } from '../../utils/permissions';
@@ -202,6 +203,18 @@ const Sidebar = ({ mobileOpen = false, onDrawerToggle }) => {
               <PersonIcon />
             </ListItemIcon>
             <ListItemText primary="Profil" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton 
+            selected={location.pathname === '/BackupandRestore'} 
+            onClick={() => handleNavigation('/BackupandRestore')}
+            sx={menuItemStyles}
+          >
+            <ListItemIcon sx={iconStyles}>
+              <StorageIcon />
+            </ListItemIcon>
+            <ListItemText primary="Backup&Restore /Delete" />
           </ListItemButton>
         </ListItem>
       </List>

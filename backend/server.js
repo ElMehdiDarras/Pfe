@@ -4,7 +4,7 @@ const http = require('http');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const socketService = require('./services/socketService');
-const ModbusPoller = require('./services/modbusPoller');
+const bf2300Service = require('./services/bf2300Service');
 require('dotenv').config();
 
 // Import routes
@@ -12,7 +12,6 @@ const authRoutes = require('./routes/auth');
 const siteRoutes = require('./routes/sites');
 const alarmRoutes = require('./routes/alarms');
 const notificationRoutes = require('./routes/notifications');
-// Remove the userRoutes import that doesn't exist
 
 // Create Express app
 const app = express();
@@ -22,8 +21,10 @@ const server = http.createServer(app);
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5000',
-  credentials: true
+  origin: process.env.FRONTEND_URL || 'http://localhost:5000',
+  credentials: true,
+  methods:['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders:['Content-Type','Authorization']
 }));
 app.use(express.json());
 
@@ -32,29 +33,43 @@ app.use('/api/auth', authRoutes);
 app.use('/api/sites', siteRoutes);
 app.use('/api/alarms', alarmRoutes);
 app.use('/api/notifications', notificationRoutes);
-// Remove the users route that doesn't exist
 
 // Initialize Socket.IO
 const io = socketService.initSocketServer(server);
-
-// Create Modbus poller instance
-const modbusPoller = new ModbusPoller(io);
+app.set('io', io); // Make io available to routes
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
     
-    // Initialize Modbus polling for all boxes
-    const Site = require('./models/sites');
-    const sites = await Site.find().lean();
-    
-    for (const site of sites) {
-      if (site.boxes && site.boxes.length > 0) {
-        for (const box of site.boxes) {
-          await modbusPoller.startPolling(site, box);
+    // Initialize BF-2300 monitoring for all boxes
+    try {
+      const bf2300Instance = bf2300Service(io);
+      await bf2300Instance.initialize();
+      console.log('BF-2300 service initialized');
+      
+      // Check for boxes already in database
+      const Site = require('./models/sites');
+      const sites = await Site.find().lean();
+      
+      console.log(`Found ${sites.length} sites with a total of ${sites.reduce((sum, site) => sum + (site.boxes?.length || 0), 0)} boxes`);
+      
+      // Start monitoring all configured boxes
+      for (const site of sites) {
+        if (site.boxes && site.boxes.length > 0) {
+          for (const box of site.boxes) {
+            try {
+              await bf2300Instance.monitorBox(site.name, box);
+              console.log(`Started monitoring box ${box.name} (${box.ip}) for site ${site.name}`);
+            } catch (boxErr) {
+              console.error(`Failed to start monitoring for box ${box.name} (${box.ip}):`, boxErr);
+            }
+          }
         }
       }
+    } catch (err) {
+      console.error('Error initializing BF-2300 service:', err);
     }
     
     // Start the server
@@ -68,12 +83,22 @@ mongoose.connect(process.env.MONGODB_URI)
     process.exit(1);
   });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'up', 
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString() 
+  });
+});
+
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully');
   
-  // Stop Modbus polling
-  modbusPoller.stopAll();
+  // Stop BF-2300 monitoring
+  await bf2300Service.shutdown();
+  console.log('BF-2300 service stopped');
   
   // Close MongoDB connection
   await mongoose.connection.close();
@@ -89,8 +114,9 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully');
   
-  // Stop Modbus polling
-  modbusPoller.stopAll();
+  // Stop BF-2300 monitoring
+  await bf2300Instance.shutdown();
+  console.log('BF-2300 service stopped');
   
   // Close MongoDB connection
   await mongoose.connection.close();
@@ -102,3 +128,6 @@ process.on('SIGINT', async () => {
     process.exit(0);
   });
 });
+
+// Export app for testing
+module.exports = app;

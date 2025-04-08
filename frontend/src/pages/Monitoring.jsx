@@ -98,7 +98,7 @@ const Monitoring = () => {
             backgroundColor: '#f5f5f5',
           }}
         >
-          <Tab label="HOSTS" />
+          <Tab label="SITES" />
           <Tab label="BOXES" />
           <Tab label="EQUIPEMENTS" />
           <Tab label="PROBLÈMES" />
@@ -111,10 +111,10 @@ const Monitoring = () => {
               <Table size="small">
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
-                    <TableCell>Host</TableCell>
+                    <TableCell>Site</TableCell>
                     <TableCell>Adresse IP</TableCell>
                     <TableCell>Statut</TableCell>
-                    <TableCell>Site</TableCell>
+                    <TableCell>Ville</TableCell>
                     <TableCell>Dernière vérification</TableCell>
                     <TableCell>Description</TableCell>
                   </TableRow>
@@ -230,7 +230,7 @@ const Monitoring = () => {
                     <TableCell>Status</TableCell>
                     <TableCell>Site et Lieu</TableCell>
                     <TableCell>Dernière vérification</TableCell>
-                    <TableCell>Description</TableCell>
+
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -260,7 +260,7 @@ const Monitoring = () => {
                           <TableCell>{renderStatusChip(equip.status)}</TableCell>
                           <TableCell>{site.name} - {site.location}</TableCell>
                           <TableCell>{new Date().toLocaleString('fr-FR')}</TableCell>
-                          <TableCell>{equip.type}</TableCell>
+
                         </TableRow>
                       ))
                     )

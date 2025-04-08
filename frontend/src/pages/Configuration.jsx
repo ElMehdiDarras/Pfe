@@ -671,8 +671,7 @@ const Configuration = () => {
           <Tab label="SITES" />
           <Tab label="BOXES" />
           <Tab label="EQUIPEMENTS" />
-          <Tab label="UTILISATEURS" />
-          <Tab label="NOTIFICATIONS" />
+
         </Tabs>
 
         <Box sx={{ p: 0 }}>

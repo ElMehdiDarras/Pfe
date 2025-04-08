@@ -19,13 +19,20 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
-  Alert
+  Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Card,
+  CardContent
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useSiteSummary } from '../hooks/useSites';
 import { useAlarmStatistics, useActiveAlarms } from '../hooks/useAlarms';
 import AlarmStatusChart from '../components/alarms/AlarmStatusChart';
@@ -34,7 +41,7 @@ import { useAuth } from '../context/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import '../styles/dashboard-cards.css'; // Import the dashboard card styles
 
-// Metro Card Component
+// Metric Card Component
 const MetricCard = ({ title, value, icon, type }) => {
   // Define styles based on type
   const getCardClass = () => {
@@ -82,34 +89,119 @@ const MetricCard = ({ title, value, icon, type }) => {
   );
 };
 
+// Site Status Card Component for Statistics tab
+const SiteStatusCard = ({ site }) => {
+  const navigate = useNavigate();
+  
+  // Handle click to navigate to site details
+  const handleClick = () => {
+    navigate(`/SiteDetail/${site.id || site.name.replace(/\s+/g, '-')}`);
+  };
+  
+  // Get status color
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'CRITICAL':
+        return '#f44336';
+      case 'MAJOR':
+        return '#ff9800';
+      case 'WARNING':
+        return '#ffeb3b';
+      case 'OK':
+        return '#4caf50';
+      default:
+        return '#9e9e9e';
+    }
+  };
+  
+  return (
+    <Card 
+      sx={{ 
+        mb: 1, 
+        cursor: 'pointer',
+        '&:hover': {
+          boxShadow: 3,
+          bgcolor: 'rgba(0, 0, 0, 0.01)'
+        },
+        borderLeft: `4px solid ${getStatusColor(site.status)}`,
+      }}
+      onClick={handleClick}
+    >
+      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="subtitle2" fontWeight="medium">
+            {site.name}
+          </Typography>
+          <Chip 
+            label={site.activeAlarms > 0 ? `${site.activeAlarms} alarmes` : 'OK'} 
+            size="small"
+            sx={{ 
+              bgcolor: site.activeAlarms > 0 ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)',
+              color: site.activeAlarms > 0 ? '#d32f2f' : '#2e7d32',
+              fontWeight: 'bold'
+            }}
+          />
+        </Box>
+        <Typography variant="caption" color="text.secondary">
+          {site.location || 'Emplacement non défini'}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tabValue, setTabValue] = useState(0);
   const queryClient = useQueryClient();
+  // Add state for time range selection
+  const [timeRange, setTimeRange] = useState('24h');
   
-  // Fetch data using your existing hooks
+  // Fetch data using your existing hooks, now passing the timeRange
   const { data: sites, isLoading: isSitesLoading, error: sitesError } = useSiteSummary();
-  const { data: alarmStats, isLoading: isStatsLoading, error: statsError } = useAlarmStatistics();
-  const { data: activeAlarms, isLoading: isAlarmsLoading, error: alarmsError } = useActiveAlarms();
+  const { data: alarmStats, isLoading: isStatsLoading, error: statsError, refetch: refetchStats } = useAlarmStatistics(timeRange);
+  const { data: activeAlarms, isLoading: isAlarmsLoading, error: alarmsError, refetch: refetchAlarms } = useActiveAlarms();
   
   // Loading and error states
   const isLoading = isSitesLoading || isStatsLoading || isAlarmsLoading;
   const hasError = sitesError || statsError || alarmsError;
 
+  // Auto-refresh for live mode
+  useEffect(() => {
+    let intervalId;
+    
+    if (timeRange === 'live') {
+      // Set up auto-refresh every 10 seconds in live mode
+      intervalId = setInterval(() => {
+        refetchStats();
+        refetchAlarms();
+      }, 10000);
+    }
+    
+    // Clean up interval when component unmounts or timeRange changes
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [timeRange, refetchStats, refetchAlarms]);
+
   // Add debugging logs for alarm statistics data
   useEffect(() => {
-    console.log('Alarm statistics loaded:', alarmStats);
-    if (alarmStats) {
-      console.log('Statistics summary:', alarmStats.summary);
-      console.log('Time series data:', alarmStats.timeSeriesData);
-      
-      if (alarmStats.timeSeriesData) {
-        console.log('Hourly data available:', !!alarmStats.timeSeriesData.hourly);
-        console.log('Recent data available:', !!alarmStats.timeSeriesData.recent);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Alarm statistics loaded:', alarmStats);
+      if (alarmStats) {
+        console.log('Statistics summary:', alarmStats.summary);
+        console.log('Time series data:', alarmStats.timeSeriesData);
         
-        if (alarmStats.timeSeriesData.hourly) {
-          console.log('Hourly data example:', alarmStats.timeSeriesData.hourly[0]);
+        if (alarmStats.timeSeriesData) {
+          console.log('Hourly data available:', !!alarmStats.timeSeriesData.hourly);
+          console.log('Recent data available:', !!alarmStats.timeSeriesData.recent);
+          
+          if (alarmStats.timeSeriesData.hourly) {
+            console.log('Hourly data example:', alarmStats.timeSeriesData.hourly[0]);
+          }
         }
       }
     }
@@ -125,6 +217,11 @@ const Dashboard = () => {
     queryClient.invalidateQueries({ queryKey: ['alarms'] });
     queryClient.invalidateQueries({ queryKey: ['sites'] });
   };
+  
+  // Handle time range change
+  const handleTimeRangeChange = (event) => {
+    setTimeRange(event.target.value);
+  };
 
   // Get summary statistics from alarm data
   const stats = React.useMemo(() => {
@@ -136,7 +233,11 @@ const Dashboard = () => {
       warning, 
       total: sites?.length || 0,
       boxes: sites?.reduce((sum, site) => sum + (site.boxes?.length || 0), 0) || 0,
-      equipment: sites?.reduce((sum, site) => sum + (site.equipment?.length || 0), 0) || 0
+      equipment: sites?.reduce((sum, site) => sum + (site.equipment?.length || 0), 0) || 0,
+      acknowledgedPercentage: Math.round(
+        (alarmStats.summary.acknowledged / 
+        Math.max(alarmStats.summary.acknowledged + alarmStats.summary.unacknowledged, 1)) * 100
+      )
     };
   }, [alarmStats, sites]);
 
@@ -166,10 +267,30 @@ const Dashboard = () => {
       }));
     }
     
-    // Fallback: transform hourly data if available
-    if (alarmStats?.timeSeriesData?.hourly && Array.isArray(alarmStats.timeSeriesData.hourly)) {
+    // For 24h timeRange
+    if (timeRange === '24h' && alarmStats?.timeSeriesData?.hourly && Array.isArray(alarmStats.timeSeriesData.hourly)) {
       return alarmStats.timeSeriesData.hourly.map(item => ({
         hour: `${item.label}h`,
+        critical: item.critical || 0,
+        major: item.major || 0,
+        warning: item.warning || 0
+      }));
+    }
+    
+    // For 7d timeRange
+    if (timeRange === '7d' && alarmStats?.timeSeriesData?.daily && Array.isArray(alarmStats.timeSeriesData.daily)) {
+      return alarmStats.timeSeriesData.daily.map(item => ({
+        hour: item.label, // Keep using 'hour' as the key for consistency with the chart component
+        critical: item.critical || 0,
+        major: item.major || 0,
+        warning: item.warning || 0
+      }));
+    }
+    
+    // For live timeRange
+    if (timeRange === 'live' && alarmStats?.timeSeriesData?.recent && Array.isArray(alarmStats.timeSeriesData.recent)) {
+      return alarmStats.timeSeriesData.recent.map(item => ({
+        hour: item.label,
         critical: item.critical || 0,
         major: item.major || 0,
         warning: item.warning || 0
@@ -185,10 +306,45 @@ const Dashboard = () => {
     navigate(`/SiteDetail/${siteId}`);
   };
 
+  // Navigate to alarms history page
+  const handleViewAlarmHistory = () => {
+    navigate('/Historique');
+  };
+
+  // Handle click on sites with alarms
+  const handleViewProblemSites = () => {
+    setTabValue(2); // Switch to Sites tab
+  };
+
+  // Sort sites by active alarms (most alarmed first)
+  const sortedSites = React.useMemo(() => {
+    if (!sites) return [];
+    return [...sites].sort((a, b) => {
+      // First sort by whether they have active alarms
+      if (a.activeAlarms > 0 && b.activeAlarms === 0) return -1;
+      if (a.activeAlarms === 0 && b.activeAlarms > 0) return 1;
+      
+      // Then by number of active alarms
+      if (a.activeAlarms !== b.activeAlarms) {
+        return b.activeAlarms - a.activeAlarms;
+      }
+      
+      // Finally alphabetically by name
+      return a.name.localeCompare(b.name);
+    });
+  }, [sites]);
+
+  // Filter sites with problems for quick view
+  const sitesWithAlarms = React.useMemo(() => {
+    if (!sortedSites) return [];
+    return sortedSites.filter(site => site.activeAlarms > 0);
+  }, [sortedSites]);
+
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', flexDirection: 'column', gap: 2 }}>
         <CircularProgress />
+        <Typography color="text.secondary">Chargement des données...</Typography>
       </Box>
     );
   }
@@ -196,9 +352,21 @@ const Dashboard = () => {
   if (hasError) {
     return (
       <Box sx={{ p: 3, bgcolor: '#ffebee', borderRadius: 1 }}>
-        <Typography color="error">
-          Erreur de chargement des données. Veuillez rafraîchir la page.
+        <Typography variant="h6" color="error" gutterBottom>
+          Erreur de chargement des données
         </Typography>
+        <Typography color="error.dark" paragraph>
+          Une erreur s'est produite lors du chargement des données. Veuillez rafraîchir la page ou réessayer plus tard.
+        </Typography>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={handleRefresh} 
+          startIcon={<RefreshIcon />}
+          sx={{ mt: 1 }}
+        >
+          Rafraîchir
+        </Button>
         {process.env.NODE_ENV === 'development' && (
           <Box sx={{ mt: 2 }}>
             {sitesError && <Typography variant="caption" display="block">Sites error: {sitesError.message}</Typography>}
@@ -282,7 +450,6 @@ const Dashboard = () => {
           <Tab label="Vue d'ensemble" />
           <Tab label="Alarmes Actives" />
           <Tab label="Sites" />
-          <Tab label="Statistiques" />
         </Tabs>
 
         {/* Tab Panels */}
@@ -294,11 +461,34 @@ const Dashboard = () => {
                 {/* Alarm activity chart */}
                 <Grid item xs={12}>
                   <Paper className="dashboard-card chart-container">
-                    <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
-                      Activité des Alarmes (Dernières 24 Heures)
-                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, px: 2, pt: 2 }}>
+                      <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
+                        Activité des Alarmes {
+                          timeRange === '24h' ? '(Dernières 24 Heures)' : 
+                          timeRange === '7d' ? '(7 Jours)' : 
+                          '(Temps Réel)'
+                        }
+                      </Typography>
+                      
+                      {/* Add the dropdown for time range selection */}
+                      <FormControl sx={{ minWidth: 150 }} size="small">
+                        <InputLabel id="time-range-label">Période</InputLabel>
+                        <Select
+                          labelId="time-range-label"
+                          id="time-range-select"
+                          value={timeRange}
+                          label="Période"
+                          onChange={handleTimeRangeChange}
+                        >
+                          <MenuItem value="24h">24 heures</MenuItem>
+                          <MenuItem value="7d">7 jours</MenuItem>
+                          <MenuItem value="live">Temps réel</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Box>
+                    
                     {chartData ? (
-                      <Box sx={{ height: 300 }}>
+                      <Box sx={{ height: 300, px: 2, pb: 2 }}>
                         <AlarmStatusChart data={chartData} height={300} />
                       </Box>
                     ) : (
@@ -308,23 +498,84 @@ const Dashboard = () => {
                         justifyContent: 'center', 
                         alignItems: 'center',
                         border: '1px dashed #ccc',
-                        borderRadius: 1 
+                        borderRadius: 1,
+                        mx: 2,
+                        mb: 2
                       }}>
                         <Typography color="text.secondary">
                           Données statistiques non disponibles
                         </Typography>
                       </Box>
                     )}
+                    
+                    {/* Additional info for real-time mode */}
+                    {timeRange === 'live' && (
+                      <Box sx={{ mt: 2, p: 2, mx: 2, mb: 2, bgcolor: 'rgba(25, 118, 210, 0.05)', borderRadius: 1, border: '1px solid rgba(25, 118, 210, 0.1)' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Mode Temps Réel - Les données sont actualisées toutes les 10 secondes.
+                        </Typography>
+                      </Box>
+                    )}
                   </Paper>
                 </Grid>
 
+                {/* Site status cards - Sites with active alarms */}
+                {sitesWithAlarms.length > 0 && (
+                  <Grid item xs={12} md={4}>
+                    <Paper className="dashboard-card">
+                      <Box sx={{ p: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                          <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
+                            Sites avec Alarmes ({sitesWithAlarms.length})
+                          </Typography>
+                          <Button 
+                            variant="text" 
+                            size="small"
+                            onClick={handleViewProblemSites}
+                            endIcon={<VisibilityIcon fontSize="small" />}
+                          >
+                            Tout voir
+                          </Button>
+                        </Box>
+                        
+                        <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                          {sitesWithAlarms.slice(0, 5).map(site => (
+                            <SiteStatusCard key={site.id || site.name} site={site} />
+                          ))}
+                          
+                          {sitesWithAlarms.length > 5 && (
+                            <Box sx={{ textAlign: 'center', mt: 1 }}>
+                              <Button 
+                                variant="outlined" 
+                                size="small"
+                                onClick={handleViewProblemSites}
+                              >
+                                +{sitesWithAlarms.length - 5} autres sites
+                              </Button>
+                            </Box>
+                          )}
+                        </Box>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                )}
+
                 {/* Recent alarms table */}
-                <Grid item xs={12}>
+                <Grid item xs={12} md={sitesWithAlarms.length > 0 ? 8 : 12}>
                   <Paper className="dashboard-card">
                     <Box sx={{ p: 2 }}>
-                      <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
-                        Dernières Alarmes
-                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
+                          Dernières Alarmes
+                        </Typography>
+                        <Button 
+                          variant="outlined" 
+                          size="small"
+                          onClick={handleViewAlarmHistory}
+                        >
+                          Voir l'historique
+                        </Button>
+                      </Box>
                       <TableContainer>
                         <Table size="small">
                           <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
@@ -412,9 +663,18 @@ const Dashboard = () => {
             <Box className="dashboard-content">
               <Paper className="dashboard-card">
                 <Box sx={{ p: 2 }}>
-                  <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
-                    Alarmes Actives ({activeAlarms?.length || 0})
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
+                      Alarmes Actives ({activeAlarms?.length || 0})
+                    </Typography>
+                    <Button 
+                      variant="outlined" 
+                      size="small"
+                      onClick={handleViewAlarmHistory}
+                    >
+                      Voir l'historique
+                    </Button>
+                  </Box>
                   <TableContainer>
                     <Table size="small">
                       <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
@@ -424,8 +684,7 @@ const Dashboard = () => {
                           <TableCell>Description</TableCell>
                           <TableCell>Statut</TableCell>
                           <TableCell>Horodatage</TableCell>
-                          <TableCell>Acquitté par</TableCell>
-                          <TableCell>Actions</TableCell>
+                          <TableCell>Detail</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -456,17 +715,6 @@ const Dashboard = () => {
                                 })}
                               </TableCell>
                               <TableCell>
-                                {alarm.acknowledgedBy ? (
-                                  <Typography variant="body2" color="text.secondary">
-                                    {alarm.acknowledgedBy}
-                                  </Typography>
-                                ) : (
-                                  <Typography variant="body2" color="warning.main">
-                                    Non acquitté
-                                  </Typography>
-                                )}
-                              </TableCell>
-                              <TableCell>
                                 <Tooltip title="Voir détails du site">
                                   <IconButton 
                                     size="small" 
@@ -481,7 +729,7 @@ const Dashboard = () => {
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={7} align="center">
+                            <TableCell colSpan={6} align="center">
                               <Typography variant="body2" color="text.secondary">
                                 Aucune alarme active détectée
                               </Typography>
@@ -499,7 +747,7 @@ const Dashboard = () => {
           {/* Sites Tab */}
           {tabValue === 2 && (
             <Box className="dashboard-content">
-              <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 'medium', p: 2 }}>
                 Sites Surveillés ({sites?.length || 0})
               </Typography>
               <Paper className="dashboard-card">
@@ -508,237 +756,10 @@ const Dashboard = () => {
                     sites={sites} 
                     isLoading={isSitesLoading} 
                     error={sitesError} 
+                    onSiteClick={handleSiteClick}
                   />
                 </Box>
               </Paper>
-            </Box>
-          )}
-
-          {/* Statistics Tab */}
-          {tabValue === 3 && (
-            <Box className="dashboard-content">
-              <Grid container spacing={3}>
-                {/* Alarms by type */}
-                <Grid item xs={12} md={6}>
-                  <Paper className="dashboard-card" sx={{ height: '100%' }}>
-                    <Box sx={{ p: 2 }}>
-                      <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
-                        Distribution des Alarmes par Type
-                      </Typography>
-                      {alarmStats?.summary ? (
-                        <Box sx={{ p: 2 }}>
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              Alarmes Critiques
-                            </Typography>
-                            <Box sx={{ 
-                              height: 24, 
-                              bgcolor: '#f44336', 
-                              width: `${alarmStats.summary.critical / Math.max(alarmStats.summary.critical + alarmStats.summary.major + alarmStats.summary.warning, 1) * 100}%`,
-                              minWidth: '30px',
-                              borderRadius: 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'white',
-                              fontWeight: 'bold'
-                            }}>
-                              {alarmStats.summary.critical}
-                            </Box>
-                          </Box>
-                          
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              Alarmes Majeures
-                            </Typography>
-                            <Box sx={{ 
-                              height: 24, 
-                              bgcolor: '#ff9800', 
-                              width: `${alarmStats.summary.major / Math.max(alarmStats.summary.critical + alarmStats.summary.major + alarmStats.summary.warning, 1) * 100}%`,
-                              minWidth: '30px',
-                              borderRadius: 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'white',
-                              fontWeight: 'bold'
-                            }}>
-                              {alarmStats.summary.major}
-                            </Box>
-                          </Box>
-                          
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              Alarmes Warning
-                            </Typography>
-                            <Box sx={{ 
-                              height: 24, 
-                              bgcolor: '#ffeb3b', 
-                              width: `${alarmStats.summary.warning / Math.max(alarmStats.summary.critical + alarmStats.summary.major + alarmStats.summary.warning, 1) * 100}%`,
-                              minWidth: '30px',
-                              borderRadius: 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'black',
-                              fontWeight: 'bold'
-                            }}>
-                              {alarmStats.summary.warning}
-                            </Box>
-                          </Box>
-                        </Box>
-                      ) : (
-                        <Box sx={{ 
-                          height: 180, 
-                          display: 'flex', 
-                          justifyContent: 'center', 
-                          alignItems: 'center' 
-                        }}>
-                          <Typography color="text.secondary">
-                            Aucune donnée disponible
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  </Paper>
-                </Grid>
-
-                {/* Acknowledged vs unacknowledged */}
-                <Grid item xs={12} md={6}>
-                  <Paper className="dashboard-card" sx={{ height: '100%' }}>
-                    <Box sx={{ p: 2 }}>
-                      <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
-                        État des Alarmes
-                      </Typography>
-                      {alarmStats?.summary ? (
-                        <Box sx={{ p: 2 }}>
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              Alarmes Acquittées
-                            </Typography>
-                            <Box sx={{ 
-                              height: 24, 
-                              bgcolor: '#4caf50', 
-                              width: `${alarmStats.summary.acknowledged / Math.max(alarmStats.summary.acknowledged + alarmStats.summary.unacknowledged, 1) * 100}%`,
-                              minWidth: '30px',
-                              borderRadius: 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'white',
-                              fontWeight: 'bold'
-                            }}>
-                              {alarmStats.summary.acknowledged || 0}
-                            </Box>
-                          </Box>
-                          
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              Alarmes Non Acquittées
-                            </Typography>
-                            <Box sx={{ 
-                              height: 24, 
-                              bgcolor: '#f44336', 
-                              width: `${alarmStats.summary.unacknowledged / Math.max(alarmStats.summary.acknowledged + alarmStats.summary.unacknowledged, 1) * 100}%`,
-                              minWidth: '30px',
-                              borderRadius: 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'white',
-                              fontWeight: 'bold'
-                            }}>
-                              {alarmStats.summary.unacknowledged || 0}
-                            </Box>
-                          </Box>
-                          
-                          <Box sx={{ mt: 3 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              Statistiques Totales
-                            </Typography>
-                            <Grid container spacing={2}>
-                              <Grid item xs={6}>
-                                <Paper 
-                                  elevation={0} 
-                                  sx={{ 
-                                    p: 1, 
-                                    bgcolor: '#f5f5f5', 
-                                    textAlign: 'center',
-                                    borderRadius: 1,
-                                  }}
-                                >
-                                  <Typography variant="h5" color="primary">
-                                    {stats.boxes}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Boxes
-                                  </Typography>
-                                </Paper>
-                              </Grid>
-                              <Grid item xs={6}>
-                                <Paper 
-                                  elevation={0} 
-                                  sx={{ 
-                                    p: 1, 
-                                    bgcolor: '#f5f5f5', 
-                                    textAlign: 'center',
-                                    borderRadius: 1,
-                                  }}
-                                >
-                                  <Typography variant="h5" color="primary">
-                                    {stats.equipment}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Équipements
-                                  </Typography>
-                                </Paper>
-                              </Grid>
-                            </Grid>
-                          </Box>
-                        </Box>
-                      ) : (
-                        <Box sx={{ 
-                          height: 180, 
-                          display: 'flex', 
-                          justifyContent: 'center', 
-                          alignItems: 'center' 
-                        }}>
-                          <Typography color="text.secondary">
-                            Aucune donnée disponible
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  </Paper>
-                </Grid>
-
-                {/* Alarm trend chart */}
-                <Grid item xs={12}>
-                  <Paper className="dashboard-card chart-container">
-                    <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 'medium' }}>
-                      Tendance des Alarmes
-                    </Typography>
-                    {chartData ? (
-                      <Box sx={{ height: 300 }}>
-                        <AlarmStatusChart data={chartData} height={300} />
-                      </Box>
-                    ) : (
-                      <Box sx={{ 
-                        height: 300, 
-                        display: 'flex', 
-                        justifyContent: 'center', 
-                        alignItems: 'center',
-                        border: '1px dashed #ccc',
-                        borderRadius: 1 
-                      }}>
-                        <Typography color="text.secondary">
-                          Données statistiques non disponibles
-                        </Typography>
-                      </Box>
-                    )}
-                  </Paper>
-                </Grid>
-              </Grid>
             </Box>
           )}
         </Box>

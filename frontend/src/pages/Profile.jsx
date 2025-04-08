@@ -163,15 +163,7 @@ const Profile = () => {
                     {user.username}
                   </Typography>
                 </Grid>
-                
-                <Grid item xs={12} sm={8}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Dernière connexion
-                  </Typography>
-                  <Typography variant="body1">
-                    {formatDate(user.lastLogin)}
-                  </Typography>
-                </Grid>
+              
                 
                 {user.role === 'agent' && user.sites && user.sites.length > 0 && (
                   <Grid item xs={12}>

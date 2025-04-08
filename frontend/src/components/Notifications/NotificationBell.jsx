@@ -1,9 +1,28 @@
-// src/components/NotificationBell.jsx
+// src/components/Notifications/NotificationBell.jsx
+/**
+ * Enhanced NotificationBell component with real-time popup notifications
+ * 
+ * IMPLEMENTATION NOTES:
+ * 1. This component enhances the notification experience by showing a popup notification
+ *    when a new alarm is received in real-time.
+ * 
+ * 2. IMPORTANT: Make sure you have the required sound files in your public/sounds directory:
+ *    - /sounds/critical-alarm.mp3 - For critical alarms
+ *    - /sounds/major-alarm.mp3 - For major alarms
+ *    - /sounds/notification.mp3 - For general notifications
+ * 
+ * 3. The popup notification appears at the top right of the screen, below the AppBar
+ * 
+ * 4. Clicking on a notification will navigate to the relevant site detail page
+ * 
+ * 5. Audio will play based on the notification severity (if browser allows autoplay)
+ */
 import React, { useState, useEffect } from 'react';
 import { 
   IconButton, 
   Badge, 
   Menu, 
+  MenuItem, 
   Typography, 
   Box, 
   List, 
@@ -15,181 +34,195 @@ import {
   Divider,
   Tooltip,
   CircularProgress,
+  Paper,
   Snackbar,
-  Alert
+  Slide
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import InfoIcon from '@mui/icons-material/Info';
+import CloseIcon from '@mui/icons-material/Close';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import alarmService from '../../api/services/alarmService';
+import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '../../hooks/useAlarms';
 import { useSocket } from '../../context/SocketContext';
+// Import soundUtils with correct path
+import soundUtils from '../../utils/soundUtils';
 
+// Component for notification bell icon and dropdown
 const NotificationBell = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const { lastMessage } = useSocket();
-  const [notification, setNotification] = useState(null);
-
-  // Fetch active alarms
-  const { data: alarms = [], isLoading, error } = useQuery({
-    queryKey: ['alarms', 'active'],
-    queryFn: alarmService.getActiveAlarms,
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
-
-  // Mutation for acknowledging alarms
-  const acknowledgeMutation = useMutation({
-    mutationFn: (alarmId) => alarmService.acknowledgeAlarm(alarmId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alarms'] });
-    }
-  });
-
-  // Mutation for acknowledging all alarms
-  const acknowledgeAllMutation = useMutation({
-    mutationFn: () => alarmService.acknowledgeAllAlarms(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alarms'] });
-    }
-  });
-
-  // Listen for socket events
+  const [notificationPopup, setNotificationPopup] = useState(null);
+  
+  // Fetch notifications
+  const { 
+    data: notifications, 
+    isLoading, 
+    error 
+  } = useNotifications();
+  
+  // Mutations for mark-as-read actions
+  const markAsRead = useMarkNotificationAsRead();
+  const markAllAsRead = useMarkAllNotificationsAsRead();
+  
+  // Handle new notification from socket
   useEffect(() => {
-    if (lastMessage?.type === 'alarm-status-change') {
-      // Show notification for critical and major alarms
-      if (['CRITICAL', 'MAJOR'].includes(lastMessage.data?.status)) {
-        setNotification({
-          severity: lastMessage.data.status === 'CRITICAL' ? 'error' : 'warning',
-          message: `${lastMessage.data.siteId || ''}: ${lastMessage.data.equipment || ''} - ${lastMessage.data.description || ''}`
-        });
-        
-        // Play sound for critical alarms
-        if (lastMessage.data.status === 'CRITICAL') {
-          const audio = new Audio('/sounds/alarm.mp3');
-          audio.play().catch(err => console.log('Failed to play sound:', err));
-        }
-        
-        // Auto-dismiss after 5 seconds
-        setTimeout(() => setNotification(null), 5000);
+    if (lastMessage?.type === 'alarm-status-change' && 
+        (lastMessage.data.status === 'CRITICAL' || lastMessage.data.status === 'MAJOR')) {
+          console.log('NotificationBell processing message:', lastMessage);
+      // Create a popup notification
+      setNotificationPopup({
+        id: new Date().getTime(),
+        message: `${lastMessage.data.siteId}: ${lastMessage.data.equipment} - ${lastMessage.data.description}`,
+        status: lastMessage.data.status,
+        siteId: lastMessage.data.siteId,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Play a sound for critical alerts (if browser allows)
+      if (lastMessage.data.status === 'CRITICAL' || lastMessage.data.status === 'MAJOR') {
+        soundUtils.playAlarmSound(lastMessage.data.status)
+          .catch(err => console.log('Audio play failed:', err));
       }
       
-      // Refresh alarm data
-      queryClient.invalidateQueries({ queryKey: ['alarms'] });
+      // Auto-hide the popup after 5 seconds
+      setTimeout(() => {
+        setNotificationPopup(null);
+      }, 5000);
     }
-  }, [lastMessage, queryClient]);
-
-  const handleOpen = (event) => {
+  }, [lastMessage]);
+  
+  // Handle opening the menu
+  const handleOpenMenu = (event) => {
     setAnchorEl(event.currentTarget);
-    // Refresh data when opening the menu
-    queryClient.invalidateQueries({ queryKey: ['alarms', 'active'] });
   };
-
-  const handleClose = () => {
+  
+  // Handle closing the menu
+  const handleCloseMenu = () => {
     setAnchorEl(null);
   };
-
-  // Fixed to receive the alarm ID directly
-  const handleAcknowledge = (alarmId, event) => {
-    // Stop propagation to prevent navigating to site detail
-    if (event) {
-      event.stopPropagation();
-    }
+  
+  // Handle clicking on a notification
+  const handleNotificationClick = (notification) => {
+    // Mark notification as read
+    markAsRead.mutate(notification.id);
     
-    if (alarmId) {
-      acknowledgeMutation.mutate(alarmId);
+    // Close menu
+    handleCloseMenu();
+    
+    // Navigate to the site detail page
+    if (notification.siteId) {
+      const formattedSiteId = notification.siteId.replace(/\s+/g, '-');
+      console.log(`Navigating to site: ${formattedSiteId}`);
+      navigate(`/SiteDetail/${formattedSiteId}`);
     } else {
-      console.error('Cannot acknowledge: No alarm ID provided');
+      // If no site ID, navigate to monitoring page
+      navigate('/Monitoring');
     }
   };
-
-  const handleAcknowledgeAll = () => {
-    acknowledgeAllMutation.mutate();
-  };
-
-  const handleAlarmClick = (siteId) => {
-    handleClose();
-    if (siteId) {
-      navigate(`/SiteDetail/${siteId.replace(/\s+/g, '-')}`);
+  
+  // Handle clicking on the popup notification
+  const handlePopupClick = () => {
+    if (notificationPopup?.siteId) {
+      // Navigate to the site detail page
+      navigate(`/SiteDetail/${notificationPopup.siteId.replace(/\s+/g, '-')}`);
+      setNotificationPopup(null);
     }
   };
-
-  // Count unacknowledged alarms
-  const unacknowledgedCount = alarms?.filter(alarm => !alarm.acknowledgedBy).length || 0;
-
-  // Get color and icon based on alarm status
-  const getStatusInfo = (status) => {
+  
+  // Handle dismissing the popup
+  const handleDismissPopup = (e) => {
+    e.stopPropagation();
+    setNotificationPopup(null);
+  };
+  
+  // Handle marking all notifications as read
+  const handleMarkAllAsRead = () => {
+    markAllAsRead.mutate();
+    handleCloseMenu();
+  };
+  
+  // Get the count of unread notifications
+  const unreadCount = notifications?.filter(n => !n.read).length || 0;
+  
+  // Get the right icon for notification status
+  const getStatusIcon = (status) => {
     switch (status) {
       case 'CRITICAL':
-        return { icon: <ErrorIcon />, color: 'error.main' };
+        return <ErrorIcon color="error" />;
       case 'MAJOR':
-        return { icon: <WarningIcon />, color: 'warning.main' };
+        return <WarningIcon sx={{ color: 'orange' }} />;
       case 'WARNING':
-        return { icon: <WarningIcon />, color: 'warning.light' };
+        return <WarningIcon sx={{ color: 'gold' }} />;
       default:
-        return { icon: <InfoIcon />, color: 'info.main' };
+        return <InfoIcon color="primary" />;
     }
   };
-
-  // Format time since (e.g., "2 hours ago")
-  const formatTimeSince = (dateString) => {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
+  
+  // Format notification time
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now - date;
     const diffMin = Math.floor(diffMs / 60000);
+    const diffHrs = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHrs / 24);
     
-    if (diffMin < 1) return "à l'instant";
+    if (diffMin < 1) return 'à l\'instant';
     if (diffMin < 60) return `il y a ${diffMin} min`;
-    
-    const diffHours = Math.floor(diffMin / 60);
-    if (diffHours < 24) return `il y a ${diffHours} h`;
-    
-    const diffDays = Math.floor(diffHours / 24);
+    if (diffHrs < 24) return `il y a ${diffHrs} h`;
     return `il y a ${diffDays} j`;
   };
-
+  
   return (
     <>
+      {/* Notification Bell Icon */}
       <Tooltip title="Notifications">
-        <IconButton color="inherit" onClick={handleOpen}>
-          <Badge badgeContent={unacknowledgedCount} color="error">
+        <IconButton
+          onClick={handleOpenMenu}
+          color="inherit"
+          aria-label="notifications"
+        >
+          <Badge badgeContent={unreadCount} color="error">
             <NotificationsIcon />
           </Badge>
         </IconButton>
       </Tooltip>
       
+      {/* Notification Menu */}
       <Menu
+        id="notification-menu"
         anchorEl={anchorEl}
         open={open}
-        onClose={handleClose}
+        onClose={handleCloseMenu}
         PaperProps={{
           elevation: 3,
           sx: {
+            minWidth: 320,
+            maxWidth: 400,
             maxHeight: 500,
-            width: '350px',
+            overflow: 'auto',
             mt: 1,
           },
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
-          <Typography variant="subtitle1" fontWeight="bold">
-            Alarmes
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="subtitle1" fontWeight="medium">
+            Notifications
           </Typography>
-          {unacknowledgedCount > 0 && (
+          
+          {unreadCount > 0 && (
             <Button
               startIcon={<DoneAllIcon />}
+              onClick={handleMarkAllAsRead}
               size="small"
-              onClick={handleAcknowledgeAll}
-              disabled={acknowledgeAllMutation.isLoading}
+              disabled={markAllAsRead.isLoading}
             >
-              Tout acquitter
+              Tout marquer comme lu
             </Button>
           )}
         </Box>
@@ -203,88 +236,130 @@ const NotificationBell = () => {
         ) : error ? (
           <Box sx={{ p: 2 }}>
             <Typography color="error">
-              Erreur de chargement des alarmes
+              Erreur de chargement des notifications
             </Typography>
           </Box>
-        ) : alarms?.length === 0 ? (
+        ) : notifications?.length === 0 ? (
           <Box sx={{ p: 3, textAlign: 'center' }}>
             <Typography color="text.secondary">
-              Aucune alarme active
+              Aucune notification
             </Typography>
           </Box>
         ) : (
           <List sx={{ p: 0 }}>
-            {alarms.map((alarm) => {
-              const { icon, color } = getStatusInfo(alarm.status);
-              return (
-                <React.Fragment key={alarm._id || `alarm-${alarm.siteId}-${alarm.pinId}-${alarm.timestamp}`}>
-                  <ListItem 
-                    button 
-                    onClick={() => handleAlarmClick(alarm.siteId)}
-                    sx={{ 
-                      bgcolor: !alarm.acknowledgedBy ? 'action.hover' : 'inherit',
-                    }}
-                  >
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: color }}>
-                        {icon}
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" fontWeight="medium">
-                            {alarm.siteId || 'Site inconnu'}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {formatTimeSince(alarm.timestamp)}
-                          </Typography>
-                        </Box>
-                      }
-                      secondary={
-                        <>
-                          <Typography variant="body2" component="span">
-                            {alarm.equipment || 'Équipement inconnu'}: {alarm.description || 'Aucune description'}
-                          </Typography>
-                          {!alarm.acknowledgedBy && (
-                            <Button
-                              size="small"
-                              onClick={(e) => handleAcknowledge(alarm._id, e)}
-                              sx={{ mt: 1, fontSize: '0.7rem' }}
-                            >
-                              Acquitter
-                            </Button>
-                          )}
-                        </>
-                      }
-                    />
-                  </ListItem>
-                  <Divider variant="inset" component="li" />
-                </React.Fragment>
-              );
-            })}
+            {notifications.map((notification) => (
+              <React.Fragment key={notification.id}>
+                <ListItem
+                  alignItems="flex-start"
+                  button
+                  onClick={() => handleNotificationClick(notification)}
+                  sx={{
+                    bgcolor: notification.read ? 'inherit' : 'rgba(25, 118, 210, 0.05)',
+                  }}
+                >
+                  <ListItemAvatar>
+                    <Avatar sx={{ 
+                      bgcolor: 
+                        notification.status === 'CRITICAL' ? 'error.main' : 
+                        notification.status === 'MAJOR' ? 'warning.main' : 
+                        notification.status === 'WARNING' ? 'warning.light' : 
+                        'primary.main'
+                    }}>
+                      {getStatusIcon(notification.status)}
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={
+                      <Typography
+                        component="span"
+                        variant="body1"
+                        fontWeight={notification.read ? 'normal' : 'medium'}
+                      >
+                        {notification.message}
+                      </Typography>
+                    }
+                    secondary={
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        {formatTime(notification.timestamp)}
+                      </Typography>
+                    }
+                  />
+                </ListItem>
+                <Divider variant="inset" component="li" />
+              </React.Fragment>
+            ))}
           </List>
         )}
         
         <Box sx={{ p: 2, textAlign: 'center' }}>
-          <Button fullWidth onClick={() => { handleClose(); navigate('/Monitoring'); }}>
-            Voir toutes les alarmes
+          <Button 
+            fullWidth 
+            onClick={() => {
+              handleCloseMenu();
+              navigate('/Historique');
+            }}
+          >
+            Voir tous les alarmes
           </Button>
         </Box>
       </Menu>
       
-      {/* Toast notification for new alarms */}
+      {/* Popup Notification for real-time alerts */}
       <Snackbar
-        open={!!notification}
-        autoHideDuration={5000}
-        onClose={() => setNotification(null)}
+        open={!!notificationPopup}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        TransitionComponent={Slide}
+        sx={{ 
+          mt: 8, // Ensure it appears below the AppBar
+          '& .MuiPaper-root': {
+            width: '100%',
+            minWidth: 300,
+            maxWidth: 400,
+          }
+        }}
       >
-        {notification && (
-          <Alert severity={notification.severity || 'info'} sx={{ width: '100%' }}>
-            {notification.message}
-          </Alert>
-        )}
+        <Paper
+          elevation={6}
+          sx={{
+            p: 1,
+            bgcolor: 
+              notificationPopup?.status === 'CRITICAL' ? 'rgba(211, 47, 47, 0.95)' : 
+              notificationPopup?.status === 'MAJOR' ? 'rgba(237, 108, 2, 0.95)' : 
+              'rgba(25, 118, 210, 0.95)',
+            color: 'white',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderRadius: 1,
+          }}
+          onClick={handlePopupClick}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', p: 1 }}>
+            <Box sx={{ mr: 1 }}>
+              {getStatusIcon(notificationPopup?.status)}
+            </Box>
+            <Box>
+              <Typography variant="subtitle2">
+                {notificationPopup?.status === 'CRITICAL' ? 'Alarme Critique' : 'Alarme Majeure'}
+              </Typography>
+              <Typography variant="body2">
+                {notificationPopup?.message}
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton 
+            size="small" 
+            sx={{ color: 'white' }}
+            onClick={handleDismissPopup}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Paper>
       </Snackbar>
     </>
   );

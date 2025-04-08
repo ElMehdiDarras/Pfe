@@ -4,10 +4,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
 // Import theme
 import thingsboardTheme from './theme/thingboardtheme';
-
 import 'leaflet/dist/leaflet.css';
 import './styles/thingsboard-theme.css';
 import './styles/dashboard-cards.css';
@@ -17,13 +15,12 @@ import './styles/global.css';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import { NotificationProvider } from './context/NotificationContext';
-
 // Components
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './routes/ProtectedRoute';
-
 // Pages
 import Dashboard from './pages/Dashboard';
+import BackupandRestore from './pages/BackupandRestore';
 import Login from './pages/Login';
 import SiteDetail from './pages/SiteDetail';
 import SiteMapView from './pages/SiteMapView';
@@ -77,6 +74,7 @@ function App() {
                     <Route path="Historique" element={<Historique />} />
                     <Route path="Profile" element={<Profile />} />
                     <Route path="Unauthorized" element={<Unauthorized />} />
+                    <Route path='BackupandRestore' element={<BackupandRestore/>}></Route>
                     <Route path="*" element={<NotFound />} />
                   </Route>
                 </Routes>

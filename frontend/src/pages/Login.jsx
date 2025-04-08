@@ -68,29 +68,40 @@ const Login = () => {
     }}
   >
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
-          <Typography 
-            component="h1" 
-            variant="h4" 
-            align="center" 
-            gutterBottom
-            sx={{ 
-              color: 'white',
-              fontWeight: 'medium',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1
-            }}
-          >
-            <img 
-              src="/icons/logo-white.png" 
-              alt="AlarmManager Logo" 
-              style={{ height: '40px', width: 'auto' }}
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
-            AlarmSense
-          </Typography>
+        <Typography 
+  component="h1" 
+  variant="h4" 
+  align="center" 
+  gutterBottom
+  sx={{ 
+    color: 'white',
+    fontWeight: 'medium',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1
+  }}
+>
+  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <img 
+      src="/icons/Maroc_telecom_logo.svg" 
+      alt="Maroc Telecom Logo" 
+      style={{ height: '30px', width: 'auto', marginRight: '12px' }}
+      onError={(e) => {
+        console.error("Logo failed to load");
+        e.target.style.display = 'none';
+      }}
+    />
+    <img 
+      src="/icons/logo-white.png" 
+      alt="AlarmManager Logo" 
+      style={{ height: '40px', width: 'auto' }}
+      onError={(e) => {
+        e.target.style.display = 'none';
+      }}
+    />
+    AlarmSense
+  </Box>
+</Typography>
         </Box>
 
         {error && (

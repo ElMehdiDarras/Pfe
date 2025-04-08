@@ -25,15 +25,20 @@ export const NotificationProvider = ({ children }) => {
   
   // Listen for new notifications via socket
   useEffect(() => {
+    
     if (lastMessage && lastMessage.type === 'notification') {
-      // Add new notification to the list
+      console.log('NotificationContext processing message:', lastMessage);
+        // Add new notification to the list
       const newNotification = lastMessage.data;
+      console.log('Processing new notification:', newNotification);
       
       // Check if it's not already in the list
       setNotifications(prev => {
         if (!prev.some(n => n.id === newNotification.id)) {
+          console.log('Adding new notification to state');
           return [newNotification, ...prev];
         }
+        console.log('Notification already exists, not adding');
         return prev;
       });
       

@@ -12,12 +12,12 @@ const boxSchema = new mongoose.Schema({
   },
   port: {
     type: Number,
-    default: 502 
+    default: 50000
   },
   status: {
     type: String,
-    enum: ['UP', 'DOWN'],
-    default: 'UP'
+    enum: ['UP', 'DOWN','UNREACHABLE'],
+    default: 'UNREACHABLE'
   },
   lastSeen: {
     type: Date,

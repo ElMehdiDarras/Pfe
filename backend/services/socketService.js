@@ -16,7 +16,7 @@ const connectedClients = new Map();
 const initSocketServer = (server) => {
   const io = socketIO(server, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:3000',
+      origin: process.env.FRONTEND_URL || 'http://localhost:5000',
       methods: ['GET', 'POST'],
       credentials: true
     }
@@ -117,6 +117,20 @@ const setupSocketListeners = (socket) => {
       socket.leave(`site:${siteId}`);
     }
   });
+  
+  // Client subscribes to box state changes
+  socket.on('box:subscribe', (boxId) => {
+    if (boxId && typeof boxId === 'string') {
+      socket.join(`box:${boxId}`);
+    }
+  });
+
+  // Client unsubscribes from box state changes
+  socket.on('box:unsubscribe', (boxId) => {
+    if (boxId && typeof boxId === 'string') {
+      socket.leave(`box:${boxId}`);
+    }
+  });
 };
 
 /**
@@ -204,11 +218,12 @@ const sendNotificationToUser = async (userId, message, status = 'INFO', io) => {
  * @param {Object} alarm - Alarm object
  * @param {Object} io - Socket.IO server instance
  */
-// Update the processAlarmNotification function to handle OK states better
 const processAlarmNotification = async (alarm, io) => {
   try {
+    console.log('Processing alarm notification:', alarm);
     // Create notifications in database based on user roles and access
     const users = await User.find().select('_id username role sites');
+    console.log(`Found ${users.length} users to notify`);
     
     // Use transaction to ensure atomic operations
     const session = await Notification.startSession();
@@ -254,10 +269,11 @@ const processAlarmNotification = async (alarm, io) => {
             
             // Only add a resolution notification if we want to track resolutions
             // (you can comment this out if you don't want resolution notifications)
-            notificationsToCreate.push(notification);
+           // notificationsToCreate.push(notification);
           } else {
             // For new alarms, always create notifications
             notificationsToCreate.push(notification);
+            console.log(`Created ${notificationsToCreate.length} notifications`);
           }
         }
       }
@@ -272,6 +288,7 @@ const processAlarmNotification = async (alarm, io) => {
       
       // Emit events to connected clients
       broadcastNotifications(io, notificationsToCreate, alarm);
+      console.log('Server emitting alarm event:', alarmEventData);
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
@@ -283,234 +300,49 @@ const processAlarmNotification = async (alarm, io) => {
 };
 
 /**
- * Process pin state change from Modbus device
+ * Process box state change event
  * @param {String} siteId - Site ID or name
  * @param {String} boxId - Box ID or name
- * @param {Number} pinNumber - Pin number
- * @param {Number} newState - New pin state (0 or 1)
+ * @param {String} oldState - Previous box state
+ * @param {String} newState - New box state
  * @param {Object} io - Socket.IO server instance
  */
-const processPinStateChange = async (siteId, boxId, pinNumber, newState, io) => {
+const processBoxStateChange = async (siteId, boxId, oldState, newState, io) => {
   try {
-    // Find pin configuration
-    const pinConfig = await require('../models/pinConfiguration').findOne({
-      siteId,
-      boxId,
-      pinNumber
-    });
-    
-    if (!pinConfig) {
-      console.error(`No pin configuration found for ${siteId}, box: ${boxId}, pin: ${pinNumber}`);
+    // Skip if state didn't change
+    if (oldState === newState) {
       return;
     }
     
-    // Get existing alarm for this pin
-    const Alarm = require('../models/alarm');
-    const existingAlarm = await Alarm.findOne({
+    // Create alarm object for notification
+    const alarmData = {
       siteId,
       boxId,
-      pinId: pinNumber.toString(),
-      resolvedAt: null
-    });
+      equipment: `Box ${boxId}`,
+      description: `Box state changed from ${oldState} to ${newState}`,
+      status: newState === 'UP' ? 'OK' : (newState === 'DOWN' ? 'MAJOR' : 'CRITICAL'),
+      timestamp: new Date()
+    };
     
-    // Determine if this is an alarm condition
-    const isAlarmCondition = pinConfig.normallyOpen ? 
-      (newState === 1) : (newState === 0);
+    // Process notification
+    await processAlarmNotification(alarmData, io);
     
-    const status = isAlarmCondition ? 
-      pinConfig.alarmSeverity || 'CRITICAL' : 'OK';
-    
-    if (isAlarmCondition) {
-      // Create or update alarm
-      if (existingAlarm) {
-        // Only update if status changed
-        if (existingAlarm.status !== status) {
-          const previousStatus = existingAlarm.status;
-          
-          existingAlarm.status = status;
-          existingAlarm.statusHistory.push({
-            status,
-            timestamp: new Date()
-          });
-          
-          await existingAlarm.save();
-          
-          // Create notification with status change context
-          const alarmWithContext = {
-            ...existingAlarm.toObject(),
-            previousStatus
-          };
-          
-          await processAlarmNotification(alarmWithContext, io);
-        }
-      } else {
-        // Create new alarm
-        const newAlarm = new Alarm({
-          siteId,
-          boxId,
-          pinId: pinNumber.toString(),
-          equipment: pinConfig.equipmentName,
-          description: pinConfig.description,
-          status,
-          timestamp: new Date(),
-          statusHistory: [{
-            status,
-            timestamp: new Date()
-          }]
-        });
-        
-        await newAlarm.save();
-        
-        // Process notification for new alarm
-        await processAlarmNotification(newAlarm, io);
-      }
-    } else if (existingAlarm) {
-      // Resolve existing alarm
-      const previousStatus = existingAlarm.status;
-      
-      existingAlarm.status = 'OK';
-      existingAlarm.resolvedAt = new Date();
-      existingAlarm.statusHistory.push({
-        status: 'OK',
+    // Emit specific box state change event
+    if (io) {
+      // Emit to all relevant rooms
+      io.to(`box:${boxId}`).to(`site:${siteId}`).to('allSites').emit('box-status-change', {
+        siteId,
+        boxId,
+        oldState,
+        newState,
         timestamp: new Date()
       });
-      
-      await existingAlarm.save();
-      
-      // Create notification for resolved alarm with context
-      const resolvedAlarm = {
-        ...existingAlarm.toObject(),
-        previousStatus
-      };
-      
-      await processAlarmNotification(resolvedAlarm, io);
     }
-    
-    // Update site and equipment status
-    await updateSiteAndEquipmentStatus(siteId, pinConfig.equipmentName, status);
-    
   } catch (error) {
-    console.error('Error processing pin state change:', error);
+    console.error('Error processing box state change:', error);
   }
 };
 
-/**
- * Update site and equipment status
- * @param {String} siteId - Site ID or name
- * @param {String} equipmentName - Equipment name
- * @param {String} status - New status
- */
-const updateSiteAndEquipmentStatus = async (siteId, equipmentName, status) => {
-  try {
-    const Site = require('../models/sites');
-    
-    // Update equipment status
-    if (equipmentName) {
-      await Site.updateOne(
-        { name: siteId, "equipment.name": equipmentName },
-        { $set: { "equipment.$.status": status } }
-      );
-    }
-    
-    // Get all active alarms for this site to determine overall status
-    const Alarm = require('../models/alarm');
-    const activeAlarms = await Alarm.find({
-      siteId,
-      status: { $ne: 'OK' },
-      resolvedAt: null
-    });
-    
-    let worstStatus = 'OK';
-    let activeCount = activeAlarms.length;
-    
-    for (const alarm of activeAlarms) {
-      if (alarm.status === 'CRITICAL') {
-        worstStatus = 'CRITICAL';
-      } else if (alarm.status === 'MAJOR' && worstStatus !== 'CRITICAL') {
-        worstStatus = 'MAJOR';
-      } else if (alarm.status === 'WARNING' && worstStatus !== 'CRITICAL' && worstStatus !== 'MAJOR') {
-        worstStatus = 'WARNING';
-      }
-    }
-    
-    // Update site status
-    await Site.updateOne(
-      { name: siteId },
-      { 
-        $set: { 
-          status: worstStatus,
-          activeAlarms: activeCount
-        }
-      }
-    );
-  } catch (error) {
-    console.error(`Error updating site status for ${siteId}:`, error);
-  }
-};
-
-/**
- * Clear notifications for resolved alarms
- * @param {String} siteId - Site ID
- * @param {String} equipmentName - Equipment name
- * @param {Object} io - Socket.IO instance
- */
-const clearResolvedAlarmNotifications = async (siteId, equipmentName, io) => {
-  try {
-    // Mark all related notifications as read
-    const result = await Notification.updateMany(
-      { 
-        siteId: siteId,
-        equipmentId: equipmentName,
-        read: false
-      },
-      { 
-        $set: { 
-          read: true, 
-          readAt: new Date() 
-        }
-      }
-    );
-    
-    console.log(`Marked ${result.modifiedCount} notifications as read for resolved alarm: ${siteId} - ${equipmentName}`);
-    
-    // Notify connected clients to refresh their notification count
-    if (result.modifiedCount > 0) {
-      // Get all users who might have these notifications
-      const users = await User.find().select('_id role sites');
-      
-      for (const user of users) {
-        // Skip users who don't have access to this site
-        if (user.role === 'agent' && 
-            user.sites && 
-            Array.isArray(user.sites) && 
-            !user.sites.includes(siteId)) {
-          continue;
-        }
-        
-        // Get this user's socket
-        const userSocket = connectedClients.get(user._id.toString());
-        if (userSocket) {
-          // Send updated count
-          sendUnreadCount(userSocket);
-          
-          // Emit a notification clear event
-          userSocket.emit('notification:clear', {
-            siteId,
-            equipmentId: equipmentName
-          });
-        }
-      }
-      
-      // Also broadcast to site and all-sites rooms
-      io.to(`site:${siteId}`).to('allSites').emit('notification:clear', {
-        siteId,
-        equipmentId: equipmentName
-      });
-    }
-  } catch (error) {
-    console.error('Error clearing resolved alarm notifications:', error);
-  }
-};
 /**
  * Broadcast notifications to appropriate users
  * @param {Object} io - Socket.IO server instance
@@ -561,13 +393,11 @@ const broadcastNotifications = (io, notifications, alarm) => {
         }
       });
     }
-    
-    // Send personal notifications to each user (existing code)
-    // ...
   } catch (error) {
     console.error('Error broadcasting notifications:', error);
   }
 };
+
 /**
  * Broadcast a system-wide notification to all connected users
  * @param {String} message - Notification message
@@ -639,8 +469,7 @@ module.exports = {
   initSocketServer,
   processAlarmNotification,
   sendNotificationToUser,
-  clearResolvedAlarmNotifications,
-  processPinStateChange,
+  processBoxStateChange,
   broadcastNotifications,
   broadcastSystemNotification,
   getConnectionStats,

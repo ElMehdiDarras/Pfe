@@ -667,16 +667,6 @@ const Statistics = () => {
                         {sites?.reduce((sum, site) => sum + (site.equipment?.length || 0), 0) || 0}
                       </Typography>
                     </Grid>
-                    <Grid item xs={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        Taux d'acquittement:
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                        {stats.total > 0 
-                          ? `${Math.round((stats.acknowledged / Math.max(stats.total, 1)) * 100)}%` 
-                          : '0%'}
-                      </Typography>
-                    </Grid>
                   </Grid>
                 </Box>
               </Grid>

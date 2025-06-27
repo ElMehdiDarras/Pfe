@@ -24,9 +24,9 @@ import {
   Alert
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import GetAppIcon from '@mui/icons-material/GetApp';
 import { useAuth } from '../context/AuthContext';
-import api from '../api/axios'; // Import your centralized API client
+import api from '../api/axios';
 
 // Import the hooks for alarms and sites
 import { useAlarms } from '../hooks/useAlarms';
@@ -203,9 +203,65 @@ const Historique = () => {
     }
   };
 
-  // Export as PDF (mock function)
-  const handleExportPdf = () => {
-    alert('Fonction d\'exportation PDF serait implémentée ici');
+  // Export data to CSV
+  const exportToCSV = () => {
+    // Determine which data to export (filtered or all)
+    const dataToExport = isFiltered ? filteredData : alarms;
+    
+    if (!dataToExport || dataToExport.length === 0) {
+      alert('No data to export');
+      return;
+    }
+    
+    try {
+      // Create CSV header row
+      const headers = ['Site', 'Equipment', 'Description', 'Status', 'Timestamp', 'Ignored'];
+      
+      // Create CSV rows from data
+      const csvRows = [];
+      csvRows.push(headers.join(','));
+      
+      dataToExport.forEach(alarm => {
+        const row = [
+          // Escape values with quotes to handle commas in text
+          `"${alarm.siteId || ''}"`,
+          `"${alarm.equipment || ''}"`,
+          `"${alarm.description || ''}"`,
+          `"${alarm.status || ''}"`,
+          `"${new Date(alarm.timestamp).toLocaleString() || ''}"`,
+          `"${alarm.ignored ? 'Yes' : 'No'}"`,
+        ];
+        csvRows.push(row.join(','));
+      });
+      
+      // Combine into CSV content
+      const csvContent = csvRows.join('\n');
+      
+      // Create a Blob with the CSV data
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      
+      // Create download link
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      // Set file name with date and filter info
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const fileName = `alarm_history_${dateStr}.csv`;
+      
+      // Set up and trigger download
+      link.setAttribute('href', url);
+      link.setAttribute('download', fileName);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log(`CSV export completed: ${dataToExport.length} records`);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      alert('An error occurred while exporting data');
+    }
   };
 
   // Status chip renderer
@@ -377,12 +433,12 @@ const Historique = () => {
                 <Link
                   component="button"
                   variant="body2"
-                  onClick={handleExportPdf}
+                  onClick={exportToCSV}
                   sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
                   disabled={loading || !!error}
                 >
-                  <PictureAsPdfIcon fontSize="small" />
-                  Génération de rapport PDF disponible après filtrage
+                  <GetAppIcon fontSize="small" />
+                  Exporter en CSV
                 </Link>
               </Box>
             </Grid>
@@ -401,18 +457,19 @@ const Historique = () => {
                 <TableCell>Description</TableCell>
                 <TableCell>Statut</TableCell>
                 <TableCell>Horodatage</TableCell>
+                <TableCell>Ignoré</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     <CircularProgress size={24} />
                   </TableCell>
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     <Typography color="error">
                       Erreur de chargement des données
                     </Typography>
@@ -453,11 +510,18 @@ const Historique = () => {
                         second: 'numeric'
                       })}
                     </TableCell>
+                    <TableCell>
+                      {alarm.ignored ? (
+                        <Chip label="Oui" size="small" color="primary" variant="outlined" />
+                      ) : (
+                        <Chip label="Non" size="small" variant="outlined" />
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     Aucune alarme trouvée
                   </TableCell>
                 </TableRow>
@@ -465,6 +529,18 @@ const Historique = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        {!isFiltered && displayData.length > 0 && (
+          <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              startIcon={<GetAppIcon />}
+              onClick={exportToCSV}
+              variant="outlined"
+              disabled={loading || !!error}
+            >
+              Exporter toutes les alarmes en CSV
+            </Button>
+          </Box>
+        )}
       </Paper>
     </>
   );

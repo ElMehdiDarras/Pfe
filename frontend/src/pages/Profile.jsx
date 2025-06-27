@@ -1,4 +1,4 @@
-// src/pages/Profile.jsx
+// Updated Profile.jsx - Fixed to properly handle undefined email/phone
 import React, { useState } from 'react';
 import {
   Typography,
@@ -13,21 +13,44 @@ import {
   Avatar
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
+import { useMutation } from '@tanstack/react-query';
+import api from '../api/axios';
 
 const Profile = () => {
   const { user } = useAuth();
   
+  // For password change
   const [passwords, setPasswords] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
   
-  const [loading, setLoading] = useState(false);
+  // UI states
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
   
-  const handleInputChange = (e) => {
+  // Password change mutation
+  const passwordChangeMutation = useMutation({
+    mutationFn: async (passwordData) => {
+      return await api.post('/auth/change-password', passwordData);
+    },
+    onSuccess: () => {
+      setSuccess(true);
+      setPasswords({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setTimeout(() => setSuccess(false), 3000);
+    },
+    onError: (error) => {
+      setError(error.response?.data?.error || 'Failed to change password');
+    }
+  });
+  
+  // Handle password input change
+  const handlePasswordChange = (e) => {
     const { name, value } = e.target;
     setPasswords(prev => ({
       ...prev,
@@ -35,42 +58,29 @@ const Profile = () => {
     }));
   };
   
-  const handleSubmit = async (e) => {
+  // Handle password change submit
+  const handleSubmitPasswordChange = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
-    setSuccess(false);
     
     // Basic validation
     if (passwords.newPassword !== passwords.confirmPassword) {
       setError('Les nouveaux mots de passe ne correspondent pas');
-      setLoading(false);
       return;
     }
     
     if (passwords.newPassword.length < 6) {
       setError('Le nouveau mot de passe doit contenir au moins 6 caractères');
-      setLoading(false);
       return;
     }
     
     try {
-      // Here you would call your auth service to change the password
-      // await authService.changePassword(passwords.currentPassword, passwords.newPassword);
-      
-      // For now, we'll simulate a successful response
-      setTimeout(() => {
-        setSuccess(true);
-        setPasswords({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        });
-        setLoading(false);
-      }, 1000);
+      passwordChangeMutation.mutate({
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword
+      });
     } catch (err) {
       setError('Une erreur est survenue lors du changement de mot de passe');
-      setLoading(false);
     }
   };
   
@@ -120,6 +130,19 @@ const Profile = () => {
         Profil Utilisateur
       </Typography>
       
+      {/* Success or error messages */}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          Mot de passe modifié avec succès
+        </Alert>
+      )}
+      
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      
       <Grid container spacing={3}>
         {/* User Information Card */}
         <Grid item xs={12} md={6}>
@@ -133,7 +156,7 @@ const Profile = () => {
                 sx={{ 
                   width: 80, 
                   height: 80, 
-                  bgcolor: '#1976d2',
+                  bgcolor: '#2c4c7c',
                   mr: 3,
                   fontSize: '1.5rem'
                 }}
@@ -155,7 +178,7 @@ const Profile = () => {
             
             <Box sx={{ p: 2 }}>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="text.secondary">
                     Nom d'utilisateur
                   </Typography>
@@ -163,7 +186,33 @@ const Profile = () => {
                     {user.username}
                   </Typography>
                 </Grid>
-              
+                
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Email
+                  </Typography>
+                  <Typography variant="body1">
+                    {user.email ? user.email : 'Non défini'}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Téléphone
+                  </Typography>
+                  <Typography variant="body1">
+                    {user.phoneNumber ? user.phoneNumber : 'Non défini'}
+                  </Typography>
+                </Grid>
+                
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Dernière connexion
+                  </Typography>
+                  <Typography variant="body1">
+                    {formatDate(user.lastLogin)}
+                  </Typography>
+                </Grid>
                 
                 {user.role === 'agent' && user.sites && user.sites.length > 0 && (
                   <Grid item xs={12}>
@@ -191,19 +240,7 @@ const Profile = () => {
               Changer de Mot de Passe
             </Typography>
             
-            <Box component="form" onSubmit={handleSubmit} sx={{ p: 3 }}>
-              {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {error}
-                </Alert>
-              )}
-              
-              {success && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  Mot de passe modifié avec succès
-                </Alert>
-              )}
-              
+            <Box component="form" onSubmit={handleSubmitPasswordChange} sx={{ p: 3 }}>
               <TextField
                 fullWidth
                 margin="normal"
@@ -211,7 +248,7 @@ const Profile = () => {
                 type="password"
                 name="currentPassword"
                 value={passwords.currentPassword}
-                onChange={handleInputChange}
+                onChange={handlePasswordChange}
                 required
               />
               
@@ -222,7 +259,7 @@ const Profile = () => {
                 type="password"
                 name="newPassword"
                 value={passwords.newPassword}
-                onChange={handleInputChange}
+                onChange={handlePasswordChange}
                 required
                 helperText="Minimum 6 caractères"
               />
@@ -234,7 +271,7 @@ const Profile = () => {
                 type="password"
                 name="confirmPassword"
                 value={passwords.confirmPassword}
-                onChange={handleInputChange}
+                onChange={handlePasswordChange}
                 required
               />
               
@@ -242,10 +279,10 @@ const Profile = () => {
                 type="submit"
                 variant="contained"
                 color="primary"
-                disabled={loading}
+                disabled={passwordChangeMutation.isLoading}
                 sx={{ mt: 3 }}
               >
-                {loading ? <CircularProgress size={24} /> : 'Changer le mot de passe'}
+                {passwordChangeMutation.isLoading ? <CircularProgress size={24} /> : 'Changer le mot de passe'}
               </Button>
             </Box>
           </Paper>

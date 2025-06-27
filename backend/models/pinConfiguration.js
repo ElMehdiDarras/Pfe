@@ -26,11 +26,11 @@ const pinConfigSchema = new mongoose.Schema({
   alarmSeverity: {
     type: String,
     enum: ['CRITICAL', 'MAJOR', 'WARNING'],
-    default: 'CRITICAL'
+    required: true
   },
   normallyOpen: {
     type: Boolean,
-    default: true // true = 0 normal/1 alarm, false = 1 normal/0 alarm
+    required: true
   }
 });
 

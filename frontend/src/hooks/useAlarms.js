@@ -1,60 +1,103 @@
-// src/hooks/useAlarms.js
+// Updated useAlarms.js with site filtering
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import alarmService from '../api/services/alarmService';
+import { useAuth } from '../context/AuthContext';
 
-// Get all alarms
+// Get all alarms - Updated with site filtering
 export const useAlarms = (options = {}) => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['alarms'],
+    queryKey: ['alarms', user?.role, user?.sites],
     queryFn: async () => {
-      return await alarmService.getAllAlarms();
+      // Get alarms from service
+      const alarms = await alarmService.getAllAlarms();
+      
+      // If user is an agent, filter alarms by their assigned sites
+      if (user && user.role === 'agent' && user.sites && user.sites.length > 0) {
+        return alarms.filter(alarm => user.sites.includes(alarm.siteId));
+      }
+      
+      // Admin and supervisor see all alarms
+      return alarms;
     },
     staleTime: 5000, // Consider data stale after 5 seconds
     refetchInterval: options.live ? 10000 : undefined, // Auto-refresh every 10 seconds if live mode
+    enabled: !!user, // Only run query if user is logged in
     ...options
   });
 };
 
-// Get active alarms
+// Get active alarms - Updated with site filtering
 export const useActiveAlarms = (options = {}) => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['alarms', 'active'],
+    queryKey: ['alarms', 'active', user?.role, user?.sites],
     queryFn: async () => {
-      return await alarmService.getActiveAlarms();
+      // Get active alarms from service
+      const activeAlarms = await alarmService.getActiveAlarms();
+      
+      // If user is an agent, filter alarms by their assigned sites
+      if (user && user.role === 'agent' && user.sites && user.sites.length > 0) {
+        return activeAlarms.filter(alarm => user.sites.includes(alarm.siteId));
+      }
+      
+      // Admin and supervisor see all alarms
+      return activeAlarms;
     },
     staleTime: 5000, // Consider data stale after 5 seconds
     refetchInterval: options.live ? 10000 : 30000, // Refresh every 10 or 30 seconds
     refetchOnMount: true, // Always fetch when component mounts
     refetchOnWindowFocus: true, // Fetch when window regains focus
+    enabled: !!user, // Only run query if user is logged in
     ...options
   });
 };
 
 // Get alarms by site
 export const useAlarmsBySite = (siteId, options = {}) => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['alarms', 'site', siteId],
+    queryKey: ['alarms', 'site', siteId, user?.role],
     queryFn: async () => {
+      // Agent access check
+      if (user && user.role === 'agent' && user.sites && !user.sites.includes(siteId)) {
+        console.warn('Agent tried to access site they don\'t have permission for:', siteId);
+        return []; // Return empty array if agent doesn't have access
+      }
+      
       return await alarmService.getAlarmsBySite(siteId);
     },
     staleTime: 5000, // Consider data stale after 5 seconds
     refetchInterval: options.live ? 10000 : 30000, // Refresh every 10 or 30 seconds
     refetchOnMount: true, // Always fetch when component mounts
     refetchOnWindowFocus: true, // Fetch when window regains focus
-    enabled: !!siteId, // Only run if siteId is provided
+    enabled: !!siteId && !!user, // Only run if siteId is provided and user is logged in
     ...options
   });
 };
 
-// Get alarm statistics with time range support
+// Get alarm statistics with time range support - Updated with site filtering
 export const useAlarmStatistics = (timeRange = '24h', options = {}) => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['alarms', 'statistics', timeRange],
+    queryKey: ['alarms', 'statistics', timeRange, user?.role, user?.sites],
     queryFn: async () => {
-      return await alarmService.getAlarmStatistics(timeRange);
+      const stats = await alarmService.getAlarmStatistics(timeRange);
+      
+      // If user is an agent, filter site statistics to only show their sites
+      if (user && user.role === 'agent' && user.sites && user.sites.length > 0 && stats.siteStats) {
+        stats.siteStats = stats.siteStats.filter(site => user.sites.includes(site.name));
+      }
+      
+      return stats;
     },
     staleTime: 5000, // Consider data stale after 5 seconds
     refetchInterval: timeRange === 'live' ? 10000 : 60000, // Auto-refresh according to mode
+    enabled: !!user, // Only run query if user is logged in
     ...options
   });
 };

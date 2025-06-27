@@ -1,4 +1,4 @@
-// src/components/layout/Sidebar.jsx
+// Updated Sidebar.jsx with proper permission checks
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -25,8 +25,8 @@ import PeopleIcon from '@mui/icons-material/People';
 import StorageIcon from '@mui/icons-material/Storage';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import { hasPermission } from '../../utils/permissions';
-import { useAuth } from '../../context/AuthContext';
+import { hasPermission, PERMISSIONS } from '/home/mhdi/Desktop/alarm-monitoring-system/frontend/src/utils/permissions.js';
+import { useAuth } from '/home/mhdi/Desktop/alarm-monitoring-system/frontend/src/context/AuthContext.jsx';
 
 // Define drawer width
 const drawerWidth = 240;
@@ -79,12 +79,17 @@ const Sidebar = ({ mobileOpen = false, onDrawerToggle }) => {
   const iconStyles = {
     color: 'rgba(255, 255, 255, 0.7)',
   };
+  
+  // Check if current user has a permission
+  const userHasPermission = (permission) => {
+    return user && hasPermission(user, permission);
+  };
 
   // Conditional drawer content (permanent on large screens, temporary on small)
   const drawerContent = (
     <Box sx={{ overflow: 'auto', mt: 2 }}>
       <List sx={{ p: 1 }}>
-        {/* Dashboard */}
+        {/* Dashboard - All users */}
         <ListItem disablePadding>
           <ListItemButton 
             selected={location.pathname === '/'} 
@@ -98,7 +103,7 @@ const Sidebar = ({ mobileOpen = false, onDrawerToggle }) => {
           </ListItemButton>
         </ListItem>
 
-        {/* Monitoring */}
+        {/* Monitoring - All users */}
         <ListItem disablePadding>
           <ListItemButton 
             selected={location.pathname === '/Monitoring'} 
@@ -112,87 +117,107 @@ const Sidebar = ({ mobileOpen = false, onDrawerToggle }) => {
           </ListItemButton>
         </ListItem>
 
-        {/* Statistics */}
-        <ListItem disablePadding>
-          <ListItemButton 
-            selected={location.pathname === '/Statistics'} 
-            onClick={() => handleNavigation('/Statistics')}
-            sx={menuItemStyles}
-          >
-            <ListItemIcon sx={iconStyles}>
-              <AssessmentIcon />
-            </ListItemIcon>
-            <ListItemText primary="Statistiques" />
-          </ListItemButton>
-        </ListItem>
+        {/* Statistics - Admin and Supervisor only */}
+        {userHasPermission(PERMISSIONS.VIEW_STATISTICS) && (
+          <ListItem disablePadding>
+            <ListItemButton 
+              selected={location.pathname === '/Statistics'} 
+              onClick={() => handleNavigation('/Statistics')}
+              sx={menuItemStyles}
+            >
+              <ListItemIcon sx={iconStyles}>
+                <AssessmentIcon />
+              </ListItemIcon>
+              <ListItemText primary="Statistiques" />
+            </ListItemButton>
+          </ListItem>
+        )}
 
-        {/* Sites Map */}
-        <ListItem disablePadding>
-          <ListItemButton 
-            selected={location.pathname === '/Cartes'} 
-            onClick={() => handleNavigation('/Cartes')}
-            sx={menuItemStyles}
-          >
-            <ListItemIcon sx={iconStyles}>
-              <MapIcon />
-            </ListItemIcon>
-            <ListItemText primary="Cartes" />
-          </ListItemButton>
-        </ListItem>
+        {/* Map - Admin and Supervisor only */}
+        {userHasPermission(PERMISSIONS.VIEW_CARTES) && (
+          <ListItem disablePadding>
+            <ListItemButton 
+              selected={location.pathname === '/Cartes'} 
+              onClick={() => handleNavigation('/Cartes')}
+              sx={menuItemStyles}
+            >
+              <ListItemIcon sx={iconStyles}>
+                <MapIcon />
+              </ListItemIcon>
+              <ListItemText primary="Cartes" />
+            </ListItemButton>
+          </ListItem>
+        )}
 
-        {/* History */}
-        <ListItem disablePadding>
-          <ListItemButton 
-            selected={location.pathname === '/Historique'} 
-            onClick={() => handleNavigation('/Historique')}
-            sx={menuItemStyles}
-          >
-            <ListItemIcon sx={iconStyles}>
-              <HistoryIcon />
-            </ListItemIcon>
-            <ListItemText primary="Historique" />
-          </ListItemButton>
-        </ListItem>
+        {/* History - Admin and Supervisor only */}
+        {userHasPermission(PERMISSIONS.VIEW_HISTORIQUE) && (
+          <ListItem disablePadding>
+            <ListItemButton 
+              selected={location.pathname === '/Historique'} 
+              onClick={() => handleNavigation('/Historique')}
+              sx={menuItemStyles}
+            >
+              <ListItemIcon sx={iconStyles}>
+                <HistoryIcon />
+              </ListItemIcon>
+              <ListItemText primary="Historique" />
+            </ListItemButton>
+          </ListItem>
+        )}
 
         <Divider sx={{ my: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
 
         {/* Configuration - Only shown to admin and supervisor */}
-        {user && (user.role === 'administrator' || user.role === 'supervisor') && (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton 
-                selected={location.pathname === '/Configuration'} 
-                onClick={() => handleNavigation('/Configuration')}
-                sx={menuItemStyles}
-              >
-                <ListItemIcon sx={iconStyles}>
-                  <SettingsIcon />
-                </ListItemIcon>
-                <ListItemText primary="Configuration" />
-              </ListItemButton>
-            </ListItem>
-
-            {/* User Management - Admin only */}
-            {user.role === 'administrator' && (
-              <ListItem disablePadding>
-                <ListItemButton 
-                  selected={location.pathname === '/UserManagement'} 
-                  onClick={() => handleNavigation('/UserManagement')}
-                  sx={menuItemStyles}
-                >
-                  <ListItemIcon sx={iconStyles}>
-                    <PeopleIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Utilisateurs" />
-                </ListItemButton>
-              </ListItem>
-            )}
-            
-            <Divider sx={{ my: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
-          </>
+        {userHasPermission(PERMISSIONS.VIEW_CONFIGURATION) && (
+          <ListItem disablePadding>
+            <ListItemButton 
+              selected={location.pathname === '/Configuration'} 
+              onClick={() => handleNavigation('/Configuration')}
+              sx={menuItemStyles}
+            >
+              <ListItemIcon sx={iconStyles}>
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary="Configuration" />
+            </ListItemButton>
+          </ListItem>
         )}
 
-        {/* Profile */}
+        {/* User Management - Admin only */}
+        {userHasPermission(PERMISSIONS.MANAGE_USERS) && (
+          <ListItem disablePadding>
+            <ListItemButton 
+              selected={location.pathname === '/UserManagement'} 
+              onClick={() => handleNavigation('/UserManagement')}
+              sx={menuItemStyles}
+            >
+              <ListItemIcon sx={iconStyles}>
+                <PeopleIcon />
+              </ListItemIcon>
+              <ListItemText primary="Utilisateurs" />
+            </ListItemButton>
+          </ListItem>
+        )}
+            
+        {/* Backup & Restore - Admin only */}
+        {userHasPermission(PERMISSIONS.MANAGE_SITES) && (
+          <ListItem disablePadding>
+            <ListItemButton 
+              selected={location.pathname === '/BackupandRestore'} 
+              onClick={() => handleNavigation('/BackupandRestore')}
+              sx={menuItemStyles}
+            >
+              <ListItemIcon sx={iconStyles}>
+                <StorageIcon />
+              </ListItemIcon>
+              <ListItemText primary="Backup & Restore" />
+            </ListItemButton>
+          </ListItem>
+        )}
+            
+        <Divider sx={{ my: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+
+        {/* Profile - All users */}
         <ListItem disablePadding>
           <ListItemButton 
             selected={location.pathname === '/Profile'} 
@@ -203,18 +228,6 @@ const Sidebar = ({ mobileOpen = false, onDrawerToggle }) => {
               <PersonIcon />
             </ListItemIcon>
             <ListItemText primary="Profil" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton 
-            selected={location.pathname === '/BackupandRestore'} 
-            onClick={() => handleNavigation('/BackupandRestore')}
-            sx={menuItemStyles}
-          >
-            <ListItemIcon sx={iconStyles}>
-              <StorageIcon />
-            </ListItemIcon>
-            <ListItemText primary="Backup&Restore /Delete" />
           </ListItemButton>
         </ListItem>
       </List>

@@ -1,0 +1,62 @@
+services:
+  # MongoDB Service
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    network_mode: "host"  # Use host networking
+    volumes:
+      - mongo-data:/data/db
+    command: mongod --bind_ip 127.0.0.1
+
+  # MongoDB Import Service
+  mongo-import:
+    image: mongo:latest
+    network_mode: "host"  # Use host networking
+    depends_on:
+      - mongo
+    volumes:
+      - ./mongo-backup:/mongo-backup
+    command: >
+      bash -c "
+        echo 'Waiting for MongoDB to start...' &&
+        sleep 10 &&
+        echo 'Importing database...' &&
+        mongoimport --host 127.0.0.1 --db alarm-monitoring --collection users --file /mongo-backup/alarm-monitoring/users.json --jsonArray &&
+        mongoimport --host 127.0.0.1 --db alarm-monitoring --collection alarms --file /mongo-backup/alarm-monitoring/alarms.json --jsonArray &&
+        mongoimport --host 127.0.0.1 --db alarm-monitoring --collection notifications --file /mongo-backup/alarm-monitoring/notifications.json --jsonArray &&
+        mongoimport --host 127.0.0.1 --db alarm-monitoring --collection pinconfigurations --file /mongo-backup/alarm-monitoring/pinconfigurations.json --jsonArray &&
+        mongoimport --host 127.0.0.1 --db alarm-monitoring --collection sites --file /mongo-backup/alarm-monitoring/sites.json --jsonArray &&
+        mongoimport --host 127.0.0.1 --db alarm-monitoring --collection test --file /mongo-backup/alarm-monitoring/test.json --jsonArray &&
+        echo 'Import completed!'
+      "
+
+  # Backend Service
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: node-backend
+    network_mode: "host"  # Use host networking
+    environment:
+      - MONGODB_URI=mongodb://127.0.0.1:27017/alarm-monitoring
+      - PORT=4001
+      - JWT_SECRET=8d2900b55e8322f37a0433cdbc598db088ef9a1f23f757403f96dbb7b62d6a47
+      - TOKEN_EXPIRY=8h
+      - USE_SIMULATOR=true
+      - SIMULATOR_INTERVAL=20000
+      - SIMULATOR_LOG_TO_FILE=true
+      - FRONTEND_URL=http://127.0.0.1:2000
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: react-frontend
+    network_mode: "host"  # Use host networking
+    environment:
+      - REACT_APP_API_URL=http://127.0.0.1:2001/api
+      - REACT_APP_SOCKET_URL=http://127.0.0.1:2001
+
+volumes:
+  mongo-data:

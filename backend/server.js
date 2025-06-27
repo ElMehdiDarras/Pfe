@@ -4,11 +4,13 @@ const http = require('http');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const socketService = require('./services/socketService');
+const { initDataPurgeJob } = require('./jobs/datapurge');
 const bf2300Service = require('./services/bf2300Service');
 require('dotenv').config();
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const settingsRoutes = require('./routes/settings');
 const siteRoutes = require('./routes/sites');
 const alarmRoutes = require('./routes/alarms');
 const notificationRoutes = require('./routes/notifications');
@@ -21,16 +23,24 @@ const server = http.createServer(app);
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5000',
+  origin: function(origin, callback) {
+    const allowedOrigins = process.env.FRONTEND_URL.split(',');
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods:['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders:['Content-Type','Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
 // Apply routes
 app.use('/api/auth', authRoutes);
 app.use('/api/sites', siteRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/api/alarms', alarmRoutes);
 app.use('/api/notifications', notificationRoutes);
 
@@ -73,7 +83,7 @@ mongoose.connect(process.env.MONGODB_URI)
     }
     
     // Start the server
-    const PORT = process.env.PORT || 5001;
+    const PORT = process.env.PORT || 2001;
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
@@ -82,6 +92,7 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error('MongoDB connection error:', err);
     process.exit(1);
   });
+  initDataPurgeJob();
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -202,6 +202,19 @@ markAllNotificationsAsRead: async () => {
       throw error;
     }
   },
+  // Add to src/api/services/alarmService.js
+
+// Ignore an alarm
+ignoreAlarm: async (alarmId) => {
+  try {
+    console.log('Ignoring alarm:', alarmId);
+    const response = await api.post(`/alarms/${alarmId}/ignore`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error ignoring alarm ${alarmId}:`, error);
+    throw error;
+  }
+},
 
 
 };

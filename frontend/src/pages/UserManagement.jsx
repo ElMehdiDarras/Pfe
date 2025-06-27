@@ -1,5 +1,5 @@
 // src/pages/UserManagement.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Typography,
   Box,
@@ -25,87 +25,133 @@ import {
   Chip,
   Grid,
   CircularProgress,
-  Alert
+  Alert,
+  Checkbox,
+  ListItemText // Add this import for the dropdown menu items
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import { usePermission } from '../utils/permissions';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import api from '../api/axios';
 
 const UserManagement = () => {
   // Check if user has permission to manage users
   usePermission('MANAGE_USERS');
-  
-  // Mock users data - in a real app, this would come from an API
-  const [users, setUsers] = useState([
-    { 
-      id: '1', 
-      username: 'admin', 
-      firstName: 'Admin', 
-      lastName: 'User', 
-      role: 'administrator',
-      sites: [],
-      lastLogin: new Date().toISOString(), 
-      active: true 
-    },
-    { 
-      id: '2', 
-      username: 'supervisor', 
-      firstName: 'Super', 
-      lastName: 'Visor', 
-      role: 'supervisor',
-      sites: [],
-      lastLogin: new Date().toISOString(), 
-      active: true 
-    },
-    { 
-      id: '3', 
-      username: 'agent1', 
-      firstName: 'Agent', 
-      lastName: 'One', 
-      role: 'agent',
-      sites: ['Rabat-Hay NAHDA'],
-      lastLogin: new Date().toISOString(), 
-      active: true 
-    },
-    { 
-      id: '4', 
-      username: 'agent2', 
-      firstName: 'Agent', 
-      lastName: 'Two', 
-      role: 'agent',
-      sites: ['Rabat-Soekarno', 'Casa-Nations Unies'],
-      lastLogin: new Date().toISOString(), 
-      active: true 
-    }
-  ]);
-  
-  // Sites data for select dropdown
-  const [sites, setSites] = useState([
-    { id: '1', name: 'Rabat-Hay NAHDA' },
-    { id: '2', name: 'Rabat-Soekarno' },
-    { id: '3', name: 'Casa-Nations Unies' }
-  ]);
+  const queryClient = useQueryClient();
   
   // UI states
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState('add');
   const [selectedUser, setSelectedUser] = useState(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [error, setError] = useState(null);
   
   // Form values
   const [formValues, setFormValues] = useState({
     username: '',
     firstName: '',
     lastName: '',
+    email: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
     role: '',
     sites: []
+  });
+  
+  // Reset password value
+  const [newPassword, setNewPassword] = useState('');
+  
+  // Load users
+  const { data: users, isLoading: usersLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await api.get('/auth/users');
+      return response.data;
+    }
+  });
+  
+  // Load sites
+  const { data: sites, isLoading: sitesLoading } = useQuery({
+    queryKey: ['sites'],
+    queryFn: async () => {
+      const response = await api.get('/sites');
+      return response.data;
+    }
+  });
+  
+  // Create user mutation - FIXED TO ENSURE EMAIL AND PHONE ARE ALWAYS INCLUDED
+  const createUserMutation = useMutation({
+    mutationFn: async (userData) => {
+      // Ensure email and phoneNumber are NEVER null or undefined
+      const dataToSend = {
+        ...userData,
+        email: userData.email || '',
+        phoneNumber: userData.phoneNumber || ''
+      };
+      console.log('Sending user data:', dataToSend); // Add this for debugging
+      return await api.post('/auth/users', dataToSend);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users']);
+      setDialogOpen(false);
+    },
+    onError: (error) => {
+      setError(error.response?.data?.error || 'Failed to create user');
+    }
+  });
+  
+  // Update user mutation - FIXED TO ENSURE EMAIL AND PHONE ARE ALWAYS INCLUDED
+  const updateUserMutation = useMutation({
+    mutationFn: async (userData) => {
+      // Ensure email and phoneNumber are always included and never undefined
+      const dataToSend = {
+        ...userData,
+        email: userData.email || '',
+        phoneNumber: userData.phoneNumber || ''
+      };
+      console.log('Updating user with data:', dataToSend); // Add debugging log
+      return await api.put(`/auth/users/${userData._id}`, dataToSend);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users']);
+      setDialogOpen(false);
+    },
+    onError: (error) => {
+      setError(error.response?.data?.error || 'Failed to update user');
+    }
+  });
+  
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId) => {
+      return await api.delete(`/auth/users/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['users']);
+      setConfirmDialogOpen(false);
+    },
+    onError: (error) => {
+      setError(error.response?.data?.error || 'Failed to delete user');
+    }
+  });
+  
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ userId, newPassword }) => {
+      return await api.post(`/auth/users/${userId}/reset-password`, { newPassword });
+    },
+    onSuccess: () => {
+      setResetPasswordDialogOpen(false);
+      setNewPassword('');
+    },
+    onError: (error) => {
+      setError(error.response?.data?.error || 'Failed to reset password');
+    }
   });
   
   // Handle form change
@@ -117,7 +163,7 @@ const UserManagement = () => {
     }));
   };
   
-  // Handle sites selection change
+  // Handle sites selection change (for multi-select dropdown)
   const handleSitesChange = (event) => {
     const { value } = event.target;
     setFormValues(prev => ({
@@ -126,29 +172,32 @@ const UserManagement = () => {
     }));
   };
   
-  // Reset password value
-  const [newPassword, setNewPassword] = useState('');
-  
   // Open dialog to add or edit user
   const handleDialogOpen = (type, user = null) => {
     setDialogType(type);
     setSelectedUser(user);
+    setError(null);
     
     if (type === 'edit' && user) {
       setFormValues({
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
+        email: user.email || '',
+        phoneNumber: user.phoneNumber || '',
         password: '',
         confirmPassword: '',
         role: user.role,
-        sites: user.sites || []
+        sites: user.sites || [],
+        _id: user._id || user.id
       });
     } else {
       setFormValues({
         username: '',
         firstName: '',
         lastName: '',
+        email: '',
+        phoneNumber: '',
         password: '',
         confirmPassword: '',
         role: 'agent',
@@ -173,16 +222,9 @@ const UserManagement = () => {
   
   // Delete user
   const handleDeleteConfirm = () => {
-    // Simulate API call
-    setLoading(true);
-    
-    // In a real app, you would call API to delete user
-    setTimeout(() => {
-      setUsers(prevUsers => prevUsers.filter(u => u.id !== selectedUser.id));
-      setConfirmDialogOpen(false);
-      setSelectedUser(null);
-      setLoading(false);
-    }, 500);
+    if (selectedUser && (selectedUser._id || selectedUser.id)) {
+      deleteUserMutation.mutate(selectedUser._id || selectedUser.id);
+    }
   };
   
   // Open reset password dialog
@@ -200,24 +242,19 @@ const UserManagement = () => {
       return;
     }
     
-    // Simulate API call
-    setLoading(true);
-    
-    // In a real app, you would call API to reset password
-    setTimeout(() => {
-      setResetPasswordDialogOpen(false);
-      setSelectedUser(null);
-      setNewPassword('');
-      setLoading(false);
-      setError(null);
-    }, 500);
+    if (selectedUser && (selectedUser._id || selectedUser.id)) {
+      resetPasswordMutation.mutate({
+        userId: selectedUser._id || selectedUser.id,
+        newPassword
+      });
+    }
   };
   
   // Submit form
   const handleFormSubmit = () => {
     // Validate form
     if (!formValues.username || !formValues.firstName || !formValues.lastName || !formValues.role) {
-      setError('Tous les champs sont obligatoires');
+      setError('Les champs Nom d\'utilisateur, Prénom, Nom et Rôle sont obligatoires');
       return;
     }
     
@@ -240,46 +277,21 @@ const UserManagement = () => {
       return;
     }
     
-    // Simulate API call
-    setLoading(true);
-    
-    setTimeout(() => {
-      if (dialogType === 'add') {
-        // Simulate adding new user
-        const newUser = {
-          id: String(users.length + 1),
-          username: formValues.username,
-          firstName: formValues.firstName,
-          lastName: formValues.lastName,
-          role: formValues.role,
-          sites: formValues.role === 'agent' ? formValues.sites : [],
-          lastLogin: null,
-          active: true
-        };
-        
-        setUsers(prevUsers => [...prevUsers, newUser]);
-      } else {
-        // Simulate updating user
-        setUsers(prevUsers => 
-          prevUsers.map(user => 
-            user.id === selectedUser.id 
-              ? { 
-                  ...user, 
-                  username: formValues.username,
-                  firstName: formValues.firstName,
-                  lastName: formValues.lastName,
-                  role: formValues.role,
-                  sites: formValues.role === 'agent' ? formValues.sites : user.sites
-                } 
-              : user
-          )
-        );
+    // Email validation if provided
+    if (formValues.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formValues.email)) {
+        setError('Format d\'email invalide');
+        return;
       }
-      
-      setDialogOpen(false);
-      setLoading(false);
-      setError(null);
-    }, 500);
+    }
+    
+    // Submit the form
+    if (dialogType === 'add') {
+      createUserMutation.mutate(formValues);
+    } else {
+      updateUserMutation.mutate(formValues);
+    }
   };
   
   // Format role for display
@@ -347,15 +359,15 @@ const UserManagement = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {loading ? (
+              {usersLoading ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center">
                     <CircularProgress size={24} />
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((user) => (
-                  <TableRow key={user.id} sx={{ '&:nth-of-type(even)': { backgroundColor: '#fafafa' } }}>
+                users?.map((user) => (
+                  <TableRow key={user._id || user.id} sx={{ '&:nth-of-type(even)': { backgroundColor: '#fafafa' } }}>
                     <TableCell>{user.username}</TableCell>
                     <TableCell>{user.lastName}</TableCell>
                     <TableCell>{user.firstName}</TableCell>
@@ -419,7 +431,7 @@ const UserManagement = () => {
                 ))
               )}
               
-              {!loading && users.length === 0 && (
+              {!usersLoading && (!users || users.length === 0) && (
                 <TableRow>
                   <TableCell colSpan={7} align="center">
                     Aucun utilisateur trouvé
@@ -496,6 +508,27 @@ const UserManagement = () => {
               />
             </Grid>
             
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Email"
+                name="email"
+                type="email"
+                value={formValues.email}
+                onChange={handleFormChange}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Téléphone"
+                name="phoneNumber"
+                value={formValues.phoneNumber}
+                onChange={handleFormChange}
+              />
+            </Grid>
+            
             {dialogType === 'add' && (
               <>
                 <Grid item xs={12} md={6}>
@@ -525,29 +558,46 @@ const UserManagement = () => {
               </>
             )}
             
+            {/* REPLACED SITE SELECTION GRID WITH DROPDOWN MENU */}
             {formValues.role === 'agent' && (
               <Grid item xs={12}>
                 <FormControl fullWidth required>
-                  <InputLabel id="sites-label">Sites accessibles</InputLabel>
+                  <InputLabel id="sites-checkbox-label">Sites accessibles</InputLabel>
                   <Select
-                    labelId="sites-label"
+                    labelId="sites-checkbox-label"
                     multiple
                     value={formValues.sites}
                     onChange={handleSitesChange}
-                    label="Sites accessibles"
                     renderValue={(selected) => (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {selected.map((value) => (
-                          <Chip key={value} label={value} size="small" />
+                        {selected.map((siteName) => (
+                          <Chip key={siteName} label={siteName} size="small" />
                         ))}
                       </Box>
                     )}
+                    MenuProps={{
+                      PaperProps: {
+                        style: {
+                          maxHeight: 300,
+                        },
+                      },
+                    }}
                   >
-                    {sites.map((site) => (
-                      <MenuItem key={site.id} value={site.name}>
-                        {site.name}
+                    {sitesLoading ? (
+                      <MenuItem disabled>
+                        <CircularProgress size={20} sx={{ mr: 1 }} />
+                        Chargement des sites...
                       </MenuItem>
-                    ))}
+                    ) : sites?.length > 0 ? (
+                      sites.map((site) => (
+                        <MenuItem key={site._id || site.id} value={site.name}>
+                          <Checkbox checked={formValues.sites.includes(site.name)} />
+                          <ListItemText primary={site.name} />
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem disabled>Aucun site disponible</MenuItem>
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -562,9 +612,9 @@ const UserManagement = () => {
             onClick={handleFormSubmit}
             variant="contained"
             color="primary"
-            disabled={loading}
+            disabled={createUserMutation.isLoading || updateUserMutation.isLoading}
           >
-            {loading ? (
+            {createUserMutation.isLoading || updateUserMutation.isLoading ? (
               <CircularProgress size={24} />
             ) : dialogType === 'add' ? (
               'Ajouter'
@@ -591,9 +641,9 @@ const UserManagement = () => {
             onClick={handleDeleteConfirm}
             variant="contained"
             color="error"
-            disabled={loading}
+            disabled={deleteUserMutation.isLoading}
           >
-            {loading ? <CircularProgress size={24} /> : 'Supprimer'}
+            {deleteUserMutation.isLoading ? <CircularProgress size={24} /> : 'Supprimer'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -630,9 +680,9 @@ const UserManagement = () => {
             onClick={handleResetPasswordConfirm}
             variant="contained"
             color="primary"
-            disabled={loading}
+            disabled={resetPasswordMutation.isLoading}
           >
-            {loading ? <CircularProgress size={24} /> : 'Réinitialiser'}
+            {resetPasswordMutation.isLoading ? <CircularProgress size={24} /> : 'Réinitialiser'}
           </Button>
         </DialogActions>
       </Dialog>

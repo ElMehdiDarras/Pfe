@@ -36,6 +36,9 @@ router.post('/login', async (req, res) => {
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        lastLogin: user.lastLogin,
         role: user.role,
         sites: user.sites
       },
@@ -63,6 +66,8 @@ router.get('/me', auth, async (req, res) => {
     firstName: req.user.firstName,
     lastName: req.user.lastName,
     role: req.user.role,
+    email: req.user.email,
+    phoneNumber: req.user.phoneNumber,
     sites: req.user.sites,
     lastLogin: req.user.lastLogin
   });
@@ -116,7 +121,27 @@ router.get('/users', auth, isAdmin, async (req, res) => {
 // Create a new user (admin only)
 router.post('/users', auth, isAdmin, async (req, res) => {
   try {
-    const { username, password, firstName, lastName, role, sites } = req.body;
+    // Extract all fields including email and phoneNumber with defaults
+    const { 
+      username, 
+      password, 
+      firstName, 
+      lastName, 
+      role, 
+      sites 
+    } = req.body;
+    
+    // Add these lines to ensure email and phoneNumber are always provided as at least empty strings
+    const email = req.body.email || '';
+    const phoneNumber = req.body.phoneNumber || '';
+    
+    // Log for debugging
+    console.log('Creating user with data:', { 
+      username, firstName, lastName, role, 
+      sites: sites ? sites.length : 0,
+      email: email ? 'provided' : 'empty', 
+      phoneNumber: phoneNumber ? 'provided' : 'empty' 
+    });
     
     // Validate required fields
     if (!username || !password || !firstName || !lastName || !role) {
@@ -139,14 +164,16 @@ router.post('/users', auth, isAdmin, async (req, res) => {
       return res.status(409).json({ error: 'Username already exists' });
     }
     
-    // Create new user
+    // Create new user - INCLUDE email and phoneNumber fields
     const user = new User({
       username,
       password, // Will be hashed by pre-save hook
       firstName,
       lastName,
       role,
-      sites: sites || []
+      sites: sites || [],
+      email: email,        // Add this to fix validation
+      phoneNumber: phoneNumber  // Add this to fix validation
     });
     
     await user.save();
@@ -168,7 +195,8 @@ router.post('/users', auth, isAdmin, async (req, res) => {
 // Update a user (admin only)
 router.put('/users/:id', auth, isAdmin, async (req, res) => {
   try {
-    const { firstName, lastName, role, sites, active } = req.body;
+    // Extract fields including email and phoneNumber
+    const { firstName, lastName, role, sites, active, email, phoneNumber } = req.body;
     
     // Find user
     const user = await User.findById(req.params.id);
@@ -179,6 +207,8 @@ router.put('/users/:id', auth, isAdmin, async (req, res) => {
     // Update fields if provided
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
+    if (email !== undefined) user.email = email || ''; // Update with default empty string
+    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber || ''; // Update with default empty string
     if (role) {
       // Validate role
       if (!['agent', 'supervisor', 'administrator'].includes(role)) {

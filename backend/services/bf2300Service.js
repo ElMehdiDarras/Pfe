@@ -1,4 +1,4 @@
-// backend/services/bf2300Service.js - Modified for Simulator Support
+// services/bf2300Service.js
 const net = require('net');
 const EventEmitter = require('events');
 const Alarm = require('../models/alarm');
@@ -7,41 +7,9 @@ const BoxStateManager = require('../utils/boxStateManager');
 const boxConfig = require('../config/boxConfig');
 const { processAlarmNotification } = require('./socketService');
 
-// Environment detection
-const TEST_MODE = process.env.NODE_ENV === 'test' || process.env.USE_SIMULATOR === 'true';
-console.log(`TEST_MODE = ${TEST_MODE}, process.env.NODE_ENV = ${process.env.NODE_ENV}, process.env.USE_SIMULATOR = ${process.env.USE_SIMULATOR}`);
-// Port mapping storage for simulator
-const simulatorPorts = {};
-
-// Calculate port for simulator based on IP address
-const ipToLocalPort = (ipAddress) => {
-  // If we already have a port assigned for this IP, return it
-  if (simulatorPorts[ipAddress]) {
-    return simulatorPorts[ipAddress];
-  }
-  
-  // Extract IP parts
-  const ipParts = ipAddress.split('.');
-  if (ipParts.length !== 4) return 50000;
-  
-  // Use last two octets to create more unique port numbers
-  const lastOctet = parseInt(ipParts[3]);
-  const secondLastOctet = parseInt(ipParts[2]);
-  
-  // Calculate port exactly as in box-simulator.js
-  const port = 50000 + ((secondLastOctet * 100 + lastOctet) % 10000);
-  
-  // Store for future use
-  simulatorPorts[ipAddress] = port;
-  
-  console.log(`Mapped IP ${ipAddress} to local port ${port} for simulator`);
-  return port;
-};
-
 /**
  * BF2300Service
  * Handles communication with BF-2300 devices using the custom TCP protocol
- * Modified to support simulator mode for testing
  */
 class BF2300Service extends EventEmitter {
   // Create singleton instance
@@ -61,18 +29,16 @@ class BF2300Service extends EventEmitter {
     }
     return BF2300Service.instance;
   }
+  
   constructor() {
     super();
     this.boxes = new Map(); // Map of connected boxes by IP address
     this.connectionStatus = new Map(); // Map of connection statuses by IP
     this.connectionAttempts = new Map(); // Track connection attempts
-    this.reconnectInterval = TEST_MODE ? 20000 : 30000; // Reconnect every 5 seconds in test mode, 30 seconds in production
-    this.healthCheckInterval = TEST_MODE ? 20000 : 60000; // Check health more frequently in test mode
-    this.maxReconnectAttempts = TEST_MODE ? 2 : 5; // Fewer attempts in test mode
+    this.reconnectInterval = parseInt(process.env.BF2300_RECONNECT_INTERVAL) || 30000; // Reconnect every 30 seconds
+    this.healthCheckInterval = parseInt(process.env.BF2300_HEALTH_CHECK_INTERVAL) || 60000; // Check health every 60 seconds
+    this.maxReconnectAttempts = parseInt(process.env.BF2300_MAX_RECONNECT_ATTEMPTS) || 5; // Maximum reconnect attempts
     this.io = null; // Socket.io instance for notifications
-    
-    // Log mode
-    console.log(`BF2300Service initialized in ${TEST_MODE ? 'TEST' : 'PRODUCTION'} mode`);
   }
   
   /**
@@ -80,7 +46,7 @@ class BF2300Service extends EventEmitter {
    * @param {Object} io - Socket.io instance
    */
   async initialize(io) {
-    console.log(`Initializing BF2300Service in ${TEST_MODE ? 'TEST' : 'PRODUCTION'} mode...`);
+    console.log(`Initializing BF2300Service...`);
     try {
       // Store io instance
       this.io = io;
@@ -151,7 +117,7 @@ class BF2300Service extends EventEmitter {
       const socket = new net.Socket();
       
       // Set timeout
-      socket.setTimeout(TEST_MODE ? 5000 : 10000); // Shorter timeout in test mode
+      socket.setTimeout(10000); // 10 seconds timeout
       
       // Set up event handlers
       socket.on('connect', () => {
@@ -207,17 +173,8 @@ class BF2300Service extends EventEmitter {
       });
       
       // Connect to the box
-      if (TEST_MODE) {
-        // In test mode, connect to localhost but map to a dynamic port based on IP
-        const dynamicPort = ipToLocalPort(box.ip);
-        console.log(`Connecting to localhost:${dynamicPort} for box ${box.name} (TEST MODE)`);
-        socket.connect(dynamicPort, 'localhost');
-      } else {
-        // In production mode, connect to the actual IP and port
-        const port = box.port || 50000;
-        console.log(`Connecting to ${box.ip}:${port} for box ${box.name} (PRODUCTION MODE)`);
-        socket.connect(port, box.ip);
-      }
+      const port = box.port || 50000;
+      socket.connect(port, box.ip);
       
     } catch (error) {
       console.error(`Error connecting to box ${box.name} at ${box.ip}:`, error);
@@ -227,7 +184,7 @@ class BF2300Service extends EventEmitter {
       
       // Update box status in database via BoxStateManager
       BoxStateManager.updateBoxState(siteName, box.name, 'DOWN', this.io);
-      console.log(`DEBUGGING: Connecting to ${TEST_MODE ? 'localhost' : box.ip}:${TEST_MODE ? dynamicPort : port}`);
+      
       // Schedule reconnection
       setTimeout(() => {
         this.reconnectToBox(siteName, box);
@@ -327,6 +284,15 @@ class BF2300Service extends EventEmitter {
       const packet = boxInfo.buffer.slice(0, 71);
       boxInfo.buffer = boxInfo.buffer.slice(71);
       
+      // Verify CRC
+      const receivedCrc = packet[70];
+      const calculatedCrc = this.calculateCRC(packet.slice(0, 70));
+      
+      if (receivedCrc !== calculatedCrc) {
+        console.warn(`CRC check failed for packet from ${boxInfo.box.name} at ${ip}. Received: ${receivedCrc}, Calculated: ${calculatedCrc}`);
+        continue; // Skip this packet
+      }
+      
       // Process the packet
       this.processPacket(ip, packet);
     }
@@ -348,15 +314,6 @@ class BF2300Service extends EventEmitter {
       // Extract data portions
       const data1 = packet.slice(4, 36);  // 32 bytes
       const data2 = packet.slice(36, 68); // 32 bytes
-      
-      // Verify CRC (simplified for now - implement actual CRC check)
-      const receivedCrc = packet[70];
-      // const calculatedCrc = this.calculateCRC(packet.slice(0, 70));
-      
-      // if (receivedCrc !== calculatedCrc) {
-      //   console.warn(`CRC check failed for packet from ${boxInfo.box.name} at ${ip}`);
-      //   return;
-      // }
       
       // Process based on command type
       switch (command) {
@@ -476,7 +433,7 @@ class BF2300Service extends EventEmitter {
           siteId: siteName,
           boxId: boxName,
           pinId: pinNumber.toString(),
-          resolvedAt: null // Only active alarms
+          status: { $ne: 'OK' } // Only active alarms - replacing resolvedAt check
         });
         
         if (isAlarmCondition) {
@@ -534,9 +491,8 @@ class BF2300Service extends EventEmitter {
             this.emit('alarmCreated', newAlarm);
           }
         } else if (existingAlarm) {
-          // Resolve existing alarm
+          // Update alarm to OK status (instead of setting resolvedAt)
           existingAlarm.status = 'OK';
-          existingAlarm.resolvedAt = new Date();
           existingAlarm.statusHistory.push({
             status: 'OK',
             timestamp: new Date()
@@ -544,16 +500,16 @@ class BF2300Service extends EventEmitter {
           
           await existingAlarm.save();
           
-          console.log(`Resolved alarm for ${siteName}, box: ${boxName}, pin: ${pinNumber}`);
+          console.log(`Set alarm to OK for ${siteName}, box: ${boxName}, pin: ${pinNumber}`);
           
           // Emit event
           if (this.io) {
             // Send notification with context of previous status
-            const resolvedAlarm = {
+            const statusChangedAlarm = {
               ...existingAlarm.toObject(),
               previousStatus: existingAlarm.statusHistory[existingAlarm.statusHistory.length - 2]?.status
             };
-            processAlarmNotification(resolvedAlarm, this.io);
+            processAlarmNotification(statusChangedAlarm, this.io);
           }
           
           this.emit('alarmResolved', existingAlarm);
@@ -577,8 +533,8 @@ class BF2300Service extends EventEmitter {
       // Get all active alarms for this site
       const activeAlarms = await Alarm.find({
         siteId: siteName,
-        status: { $ne: 'OK' },
-        resolvedAt: null
+        status: { $ne: 'OK' }, // Instead of resolvedAt null
+        ignored: false
       });
       
       // Get site with equipment
@@ -618,7 +574,7 @@ class BF2300Service extends EventEmitter {
       let activeAlarmCount = 0;
       
       for (const equipment of site.equipment) {
-        if (equipment.status !== 'OK') {
+        if (equipment.status !== 'OK' && equipment.status !== 'UNREACHABLE') {
           activeAlarmCount++;
           
           if (equipment.status === 'CRITICAL') {
@@ -694,12 +650,12 @@ class BF2300Service extends EventEmitter {
   }
 
   /**
-   * Calculate CRC checksum (simplified)
+   * Calculate CRC checksum according to BF-2300 protocol
    * @param {Buffer} data - Data to calculate CRC for
    * @returns {number} - CRC value
    */
   calculateCRC(data) {
-    // Simple sum of all bytes for now
+    // CRC is the total sum of all bytes modulo 256 (8-bit)
     let crc = 0;
     for (let i = 0; i < data.length; i++) {
       crc = (crc + data[i]) & 0xFF;

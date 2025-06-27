@@ -1,0 +1,532 @@
+=== BF-2300 Simulation Started at 2025-05-16T10:43:57.949Z ===
+
+[2025-05-16T10:43:57.950Z] [INFO] Starting BF-2300 hardware simulator...
+[2025-05-16T10:43:57.951Z] [INFO] Connecting to MongoDB...
+[2025-05-16T10:43:57.978Z] [INFO] Connected to MongoDB
+[2025-05-16T10:43:57.986Z] [INFO] Loading box configuration...
+[2025-05-16T10:43:57.987Z] [INFO] Loaded configuration for 11 sites with 14 boxes
+[2025-05-16T10:43:57.987Z] [INFO] Starting all box simulators...
+[2025-05-16T10:43:57.988Z] [INFO] Starting simulator for Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_1 (10.29.133.21) on port 53321...
+[2025-05-16T10:43:57.991Z] [INFO] Box Rabat_IAM Hay Emnahda_12IO_1 simulator listening on port 53321
+[2025-05-16T10:43:57.991Z] [INFO] Starting simulator for Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_2 (10.29.133.22) on port 53322...
+[2025-05-16T10:43:57.994Z] [INFO] Box Rabat_IAM Hay Emnahda_12IO_2 simulator listening on port 53322
+[2025-05-16T10:43:57.995Z] [INFO] Starting simulator for Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_1 (10.29.136.21) on port 53621...
+[2025-05-16T10:43:57.995Z] [INFO] Box Rabat_IAM SOEKARNO_12IO_1 simulator listening on port 53621
+[2025-05-16T10:43:57.995Z] [INFO] Starting simulator for Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 (10.29.136.22) on port 53622...
+[2025-05-16T10:43:57.995Z] [INFO] Box Rabat_IAM SOEKARNO_12IO_2 simulator listening on port 53622
+[2025-05-16T10:43:57.995Z] [INFO] Starting simulator for Casa_Nations Unies / Casa_Nations Unies_12IO_1 (10.29.139.21) on port 53921...
+[2025-05-16T10:43:57.996Z] [INFO] Box Casa_Nations Unies_12IO_1 simulator listening on port 53921
+[2025-05-16T10:43:57.996Z] [INFO] Starting simulator for Casa_Nations Unies / Casa_Nations Unies_12IO_2 (10.29.139.22) on port 53922...
+[2025-05-16T10:43:57.996Z] [INFO] Box Casa_Nations Unies_12IO_2 simulator listening on port 53922
+[2025-05-16T10:43:57.996Z] [INFO] Starting simulator for Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 (10.29.92.41) on port 59241...
+[2025-05-16T10:43:57.996Z] [INFO] Box Meknès-HAMRIA II_12IO_1 simulator listening on port 59241
+[2025-05-16T10:43:57.997Z] [INFO] Starting simulator for Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 (10.29.145.245) on port 54745...
+[2025-05-16T10:43:57.997Z] [INFO] Box Meknès-HAMRIA III_12IO_1 simulator listening on port 54745
+[2025-05-16T10:43:57.997Z] [INFO] Starting simulator for Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 (10.29.94.41) on port 59441...
+[2025-05-16T10:43:57.997Z] [INFO] Box Fès-Ville Nouvelle_12IO_1 simulator listening on port 59441
+[2025-05-16T10:43:57.997Z] [INFO] Starting simulator for Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 (10.29.143.94) on port 54394...
+[2025-05-16T10:43:57.998Z] [INFO] Box Fès-ALADARISSA_12IO_1 simulator listening on port 54394
+[2025-05-16T10:43:57.998Z] [INFO] Starting simulator for Oujda-Téléphone / Oujda-Téléphone_12IO_1 (10.29.96.41) on port 59641...
+[2025-05-16T10:43:57.998Z] [INFO] Box Oujda-Téléphone_12IO_1 simulator listening on port 59641
+[2025-05-16T10:43:57.998Z] [INFO] Starting simulator for Nador-LGD / Nador-LGD_12IO_1 (10.29.98.41) on port 59841...
+[2025-05-16T10:43:57.998Z] [INFO] Box Nador-LGD_12IO_1 simulator listening on port 59841
+[2025-05-16T10:43:57.998Z] [INFO] Starting simulator for Settat-LGD / Settat-LGD_12IO_1 (10.29.127.41) on port 52741...
+[2025-05-16T10:43:57.999Z] [INFO] Box Settat-LGD_12IO_1 simulator listening on port 52741
+[2025-05-16T10:43:57.999Z] [INFO] Starting simulator for Béni Mellal-LGD / Béni Mellal-LGD_12IO_1 (10.29.125.41) on port 52541...
+[2025-05-16T10:43:57.999Z] [INFO] Box Béni Mellal-LGD_12IO_1 simulator listening on port 52541
+[2025-05-16T10:43:57.999Z] [INFO] Started 14 box simulators
+[2025-05-16T10:43:57.999Z] [INFO] Will generate random alarms every 10 seconds
+[2025-05-16T10:43:58.000Z] [INFO] Simulation will run until stopped with Ctrl+C
+[2025-05-16T10:44:08.000Z] [INFO] Generating random alarms for 1 boxes...
+[2025-05-16T10:44:08.002Z] [INFO] Connection established from 127.0.0.1:40842 to box Rabat_IAM Hay Emnahda_12IO_2
+[2025-05-16T10:44:08.002Z] [INFO] 🟢 NORMAL: Set pin 3 (Armoire DC -48 SDM NOKIA) to NORMAL state on box Rabat_IAM Hay Emnahda_12IO_2
+[2025-05-16T10:44:08.003Z] [INFO] Generated 1 random alarms
+[2025-05-16T10:44:08.003Z] [INFO] No active alarms
+[2025-05-16T10:44:08.003Z] [INFO] Received unknown command 10 for box Rabat_IAM Hay Emnahda_12IO_2
+[2025-05-16T10:44:08.004Z] [INFO] Connection closed for box Rabat_IAM Hay Emnahda_12IO_2
+[2025-05-16T10:44:11.014Z] [WARN] ✗ Alarm resolution not found in database for Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_2 / Pin 3 (Armoire DC -48 SDM NOKIA)
+[2025-05-16T10:44:18.006Z] [INFO] Generating random alarms for 3 boxes...
+[2025-05-16T10:44:18.007Z] [INFO] Connection established from 127.0.0.1:49892 to box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:44:18.007Z] [INFO] 🔴 ALARM: Set pin 4 (Armoire DC -48 SDM NOKIA) to ALARM state on box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:44:18.008Z] [INFO] Connection established from 127.0.0.1:58668 to box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:44:18.008Z] [INFO] Received unknown command 10 for box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:44:18.008Z] [INFO] 🟢 NORMAL: Set pin 4 (Climatiseur de précision 2) to NORMAL state on box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:44:18.009Z] [INFO] Connection established from 127.0.0.1:48918 to box Casa_Nations Unies_12IO_1
+[2025-05-16T10:44:18.009Z] [INFO] Received unknown command 10 for box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:44:18.009Z] [INFO] 🔴 ALARM: Set pin 6 (Climatiseur de précision 1) to ALARM state on box Casa_Nations Unies_12IO_1
+[2025-05-16T10:44:18.009Z] [INFO] Generated 3 random alarms
+[2025-05-16T10:44:18.009Z] [INFO] 
+=== 2 Active Alarms ===
+[2025-05-16T10:44:18.009Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 0s ago
+[2025-05-16T10:44:18.010Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 0s ago
+[2025-05-16T10:44:18.010Z] [INFO] 
+[2025-05-16T10:44:18.010Z] [INFO] Connection closed for box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:44:18.010Z] [INFO] Received unknown command 10 for box Casa_Nations Unies_12IO_1
+[2025-05-16T10:44:18.010Z] [INFO] Connection closed for box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:44:18.010Z] [INFO] Connection closed for box Casa_Nations Unies_12IO_1
+[2025-05-16T10:44:21.013Z] [WARN] ✗ Alarm not found in database for Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA)
+[2025-05-16T10:44:21.016Z] [WARN] ✗ Alarm resolution not found in database for Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 4 (Climatiseur de précision 2)
+[2025-05-16T10:44:21.016Z] [WARN] ✗ Alarm not found in database for Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1)
+[2025-05-16T10:44:28.014Z] [INFO] Generating random alarms for 2 boxes...
+[2025-05-16T10:44:28.014Z] [INFO] Connection established from 127.0.0.1:44742 to box Nador-LGD_12IO_1
+[2025-05-16T10:44:28.014Z] [INFO] 🟢 NORMAL: Set pin 12 (Groupe Electrogène) to NORMAL state on box Nador-LGD_12IO_1
+[2025-05-16T10:44:28.015Z] [INFO] Connection established from 127.0.0.1:57128 to box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:44:28.015Z] [INFO] Received unknown command 10 for box Nador-LGD_12IO_1
+[2025-05-16T10:44:28.015Z] [INFO] 🟢 NORMAL: Set pin 6 (Climatiseur de précision 2) to NORMAL state on box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:44:28.015Z] [INFO] Generated 2 random alarms
+[2025-05-16T10:44:28.015Z] [INFO] 
+=== 2 Active Alarms ===
+[2025-05-16T10:44:28.015Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 10s ago
+[2025-05-16T10:44:28.015Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 10s ago
+[2025-05-16T10:44:28.015Z] [INFO] 
+[2025-05-16T10:44:28.016Z] [INFO] Received unknown command 10 for box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:44:28.016Z] [INFO] Connection closed for box Nador-LGD_12IO_1
+[2025-05-16T10:44:28.017Z] [INFO] Connection closed for box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:44:31.019Z] [WARN] ✗ Alarm resolution not found in database for Nador-LGD / Nador-LGD_12IO_1 / Pin 12 (Groupe Electrogène)
+[2025-05-16T10:44:31.020Z] [WARN] ✗ Alarm resolution not found in database for Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 6 (Climatiseur de précision 2)
+[2025-05-16T10:44:38.021Z] [INFO] Generating random alarms for 1 boxes...
+[2025-05-16T10:44:38.022Z] [INFO] Connection established from 127.0.0.1:40566 to box Settat-LGD_12IO_1
+[2025-05-16T10:44:38.022Z] [INFO] 🔴 ALARM: Set pin 9 (Redresseur) to ALARM state on box Settat-LGD_12IO_1
+[2025-05-16T10:44:38.022Z] [INFO] Generated 1 random alarms
+[2025-05-16T10:44:38.022Z] [INFO] 
+=== 3 Active Alarms ===
+[2025-05-16T10:44:38.023Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 20s ago
+[2025-05-16T10:44:38.023Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 20s ago
+[2025-05-16T10:44:38.023Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 0s ago
+[2025-05-16T10:44:38.023Z] [INFO] 
+[2025-05-16T10:44:38.023Z] [INFO] Received unknown command 10 for box Settat-LGD_12IO_1
+[2025-05-16T10:44:38.023Z] [INFO] Connection closed for box Settat-LGD_12IO_1
+[2025-05-16T10:44:41.027Z] [WARN] ✗ Alarm not found in database for Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur)
+[2025-05-16T10:44:48.029Z] [INFO] Generating random alarms for 1 boxes...
+[2025-05-16T10:44:48.029Z] [INFO] Connection established from 127.0.0.1:38876 to box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:44:48.030Z] [INFO] 🔴 ALARM: Set pin 2 (Climatiseur de précision 1) to ALARM state on box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:44:48.030Z] [INFO] Generated 1 random alarms
+[2025-05-16T10:44:48.030Z] [INFO] 
+=== 4 Active Alarms ===
+[2025-05-16T10:44:48.030Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 30s ago
+[2025-05-16T10:44:48.030Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 30s ago
+[2025-05-16T10:44:48.030Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 10s ago
+[2025-05-16T10:44:48.030Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 0s ago
+[2025-05-16T10:44:48.030Z] [INFO] 
+[2025-05-16T10:44:48.030Z] [INFO] Received unknown command 10 for box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:44:48.030Z] [INFO] Connection closed for box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:44:51.035Z] [WARN] ✗ Alarm not found in database for Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1)
+[2025-05-16T10:44:58.036Z] [INFO] Generating random alarms for 1 boxes...
+[2025-05-16T10:44:58.037Z] [INFO] Connection established from 127.0.0.1:52362 to box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:44:58.037Z] [INFO] 🔴 ALARM: Set pin 4 (Climatiseur de précision 2) to ALARM state on box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:44:58.037Z] [INFO] Generated 1 random alarms
+[2025-05-16T10:44:58.037Z] [INFO] 
+=== 5 Active Alarms ===
+[2025-05-16T10:44:58.038Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 40s ago
+[2025-05-16T10:44:58.038Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 40s ago
+[2025-05-16T10:44:58.038Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 20s ago
+[2025-05-16T10:44:58.038Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 10s ago
+[2025-05-16T10:44:58.038Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 0s ago
+[2025-05-16T10:44:58.038Z] [INFO] 
+[2025-05-16T10:44:58.038Z] [INFO] Received unknown command 10 for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:44:58.038Z] [INFO] Connection closed for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:01.042Z] [WARN] ✗ Alarm not found in database for Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2)
+[2025-05-16T10:45:08.043Z] [INFO] Generating random alarms for 3 boxes...
+[2025-05-16T10:45:08.044Z] [INFO] Connection established from 127.0.0.1:44470 to box Settat-LGD_12IO_1
+[2025-05-16T10:45:08.044Z] [INFO] 🔴 ALARM: Set pin 9 (Redresseur) to ALARM state on box Settat-LGD_12IO_1
+[2025-05-16T10:45:08.045Z] [INFO] Connection established from 127.0.0.1:48544 to box Oujda-Téléphone_12IO_1
+[2025-05-16T10:45:08.045Z] [INFO] Received unknown command 10 for box Settat-LGD_12IO_1
+[2025-05-16T10:45:08.045Z] [INFO] 🟢 NORMAL: Set pin 11 (Redresseur) to NORMAL state on box Oujda-Téléphone_12IO_1
+[2025-05-16T10:45:08.045Z] [INFO] Connection established from 127.0.0.1:58222 to box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:08.046Z] [INFO] Received unknown command 10 for box Oujda-Téléphone_12IO_1
+[2025-05-16T10:45:08.046Z] [INFO] 🟢 NORMAL: Set pin 6 (Centrale Incendie) to NORMAL state on box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:08.046Z] [INFO] Generated 3 random alarms
+[2025-05-16T10:45:08.046Z] [INFO] 
+=== 5 Active Alarms ===
+[2025-05-16T10:45:08.046Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 50s ago
+[2025-05-16T10:45:08.046Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 50s ago
+[2025-05-16T10:45:08.046Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 0s ago
+[2025-05-16T10:45:08.046Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 20s ago
+[2025-05-16T10:45:08.046Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 10s ago
+[2025-05-16T10:45:08.046Z] [INFO] 
+[2025-05-16T10:45:08.046Z] [INFO] Connection closed for box Settat-LGD_12IO_1
+[2025-05-16T10:45:08.047Z] [INFO] Received unknown command 10 for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:08.047Z] [INFO] Connection closed for box Oujda-Téléphone_12IO_1
+[2025-05-16T10:45:08.047Z] [INFO] Connection closed for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:11.051Z] [WARN] ✗ Alarm not found in database for Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur)
+[2025-05-16T10:45:11.052Z] [WARN] ✗ Alarm resolution not found in database for Oujda-Téléphone / Oujda-Téléphone_12IO_1 / Pin 11 (Redresseur)
+[2025-05-16T10:45:11.052Z] [WARN] ✗ Alarm resolution not found in database for Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 6 (Centrale Incendie)
+[2025-05-16T10:45:18.051Z] [INFO] Generating random alarms for 2 boxes...
+[2025-05-16T10:45:18.051Z] [INFO] Connection established from 127.0.0.1:43796 to box Settat-LGD_12IO_1
+[2025-05-16T10:45:18.052Z] [INFO] 🔴 ALARM: Set pin 1 (Climatiseur de précision 1) to ALARM state on box Settat-LGD_12IO_1
+[2025-05-16T10:45:18.052Z] [INFO] Connection established from 127.0.0.1:45634 to box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:18.052Z] [INFO] Received unknown command 10 for box Settat-LGD_12IO_1
+[2025-05-16T10:45:18.053Z] [INFO] 🟢 NORMAL: Set pin 11 (Redresseur) to NORMAL state on box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:18.053Z] [INFO] Generated 2 random alarms
+[2025-05-16T10:45:18.053Z] [INFO] 
+=== 6 Active Alarms ===
+[2025-05-16T10:45:18.053Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 60s ago
+[2025-05-16T10:45:18.053Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 60s ago
+[2025-05-16T10:45:18.053Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 10s ago
+[2025-05-16T10:45:18.053Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 30s ago
+[2025-05-16T10:45:18.053Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 20s ago
+[2025-05-16T10:45:18.053Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 0s ago
+[2025-05-16T10:45:18.053Z] [INFO] 
+[2025-05-16T10:45:18.053Z] [INFO] Received unknown command 10 for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:18.053Z] [INFO] Connection closed for box Settat-LGD_12IO_1
+[2025-05-16T10:45:18.054Z] [INFO] Connection closed for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:21.057Z] [WARN] ✗ Alarm not found in database for Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1)
+[2025-05-16T10:45:21.057Z] [WARN] ✗ Alarm resolution not found in database for Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur)
+[2025-05-16T10:45:28.057Z] [INFO] Generating random alarms for 2 boxes...
+[2025-05-16T10:45:28.058Z] [INFO] Connection established from 127.0.0.1:35844 to box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:45:28.059Z] [INFO] 🔴 ALARM: Set pin 3 (Climatiseur de précision 2) to ALARM state on box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:45:28.059Z] [INFO] Connection established from 127.0.0.1:46418 to box Nador-LGD_12IO_1
+[2025-05-16T10:45:28.059Z] [INFO] Received unknown command 10 for box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:45:28.059Z] [INFO] 🟢 NORMAL: Set pin 1 (Climatiseur de précision 1) to NORMAL state on box Nador-LGD_12IO_1
+[2025-05-16T10:45:28.059Z] [INFO] Generated 2 random alarms
+[2025-05-16T10:45:28.060Z] [INFO] 
+=== 7 Active Alarms ===
+[2025-05-16T10:45:28.060Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 70s ago
+[2025-05-16T10:45:28.060Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 70s ago
+[2025-05-16T10:45:28.060Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 20s ago
+[2025-05-16T10:45:28.060Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 40s ago
+[2025-05-16T10:45:28.060Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 30s ago
+[2025-05-16T10:45:28.060Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 10s ago
+[2025-05-16T10:45:28.060Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 0s ago
+[2025-05-16T10:45:28.060Z] [INFO] 
+[2025-05-16T10:45:28.060Z] [INFO] Received unknown command 10 for box Nador-LGD_12IO_1
+[2025-05-16T10:45:28.061Z] [INFO] Connection closed for box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:45:28.061Z] [INFO] Connection closed for box Nador-LGD_12IO_1
+[2025-05-16T10:45:31.064Z] [WARN] ✗ Alarm not found in database for Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2)
+[2025-05-16T10:45:31.065Z] [WARN] ✗ Alarm resolution not found in database for Nador-LGD / Nador-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1)
+[2025-05-16T10:45:38.065Z] [INFO] Generating random alarms for 1 boxes...
+[2025-05-16T10:45:38.066Z] [INFO] Connection established from 127.0.0.1:58618 to box Settat-LGD_12IO_1
+[2025-05-16T10:45:38.066Z] [INFO] 🔴 ALARM: Set pin 6 (Centrale Incendie) to ALARM state on box Settat-LGD_12IO_1
+[2025-05-16T10:45:38.066Z] [INFO] Generated 1 random alarms
+[2025-05-16T10:45:38.066Z] [INFO] 
+=== 8 Active Alarms ===
+[2025-05-16T10:45:38.066Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 80s ago
+[2025-05-16T10:45:38.066Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 80s ago
+[2025-05-16T10:45:38.066Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 30s ago
+[2025-05-16T10:45:38.067Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 50s ago
+[2025-05-16T10:45:38.067Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 40s ago
+[2025-05-16T10:45:38.067Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 20s ago
+[2025-05-16T10:45:38.067Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 10s ago
+[2025-05-16T10:45:38.067Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 0s ago
+[2025-05-16T10:45:38.067Z] [INFO] 
+[2025-05-16T10:45:38.067Z] [INFO] Received unknown command 10 for box Settat-LGD_12IO_1
+[2025-05-16T10:45:38.067Z] [INFO] Connection closed for box Settat-LGD_12IO_1
+[2025-05-16T10:45:41.071Z] [WARN] ✗ Alarm not found in database for Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie)
+[2025-05-16T10:45:48.072Z] [INFO] Generating random alarms for 1 boxes...
+[2025-05-16T10:45:48.072Z] [INFO] Connection established from 127.0.0.1:53556 to box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:48.072Z] [INFO] 🔴 ALARM: Set pin 11 (Redresseur) to ALARM state on box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:48.073Z] [INFO] Generated 1 random alarms
+[2025-05-16T10:45:48.073Z] [INFO] 
+=== 9 Active Alarms ===
+[2025-05-16T10:45:48.073Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 90s ago
+[2025-05-16T10:45:48.073Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 90s ago
+[2025-05-16T10:45:48.073Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 40s ago
+[2025-05-16T10:45:48.073Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 60s ago
+[2025-05-16T10:45:48.073Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 50s ago
+[2025-05-16T10:45:48.073Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 30s ago
+[2025-05-16T10:45:48.073Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 20s ago
+[2025-05-16T10:45:48.073Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 10s ago
+[2025-05-16T10:45:48.073Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur) - CRITICAL - 0s ago
+[2025-05-16T10:45:48.073Z] [INFO] 
+[2025-05-16T10:45:48.073Z] [INFO] Received unknown command 10 for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:48.073Z] [INFO] Connection closed for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:45:51.078Z] [WARN] ✗ Alarm not found in database for Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur)
+[2025-05-16T10:45:58.078Z] [INFO] Generating random alarms for 3 boxes...
+[2025-05-16T10:45:58.079Z] [INFO] Connection established from 127.0.0.1:59086 to box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:45:58.079Z] [INFO] 🟢 NORMAL: Set pin 10 (Redresseur) to NORMAL state on box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:45:58.079Z] [INFO] Connection established from 127.0.0.1:37918 to box Casa_Nations Unies_12IO_1
+[2025-05-16T10:45:58.079Z] [INFO] Received unknown command 10 for box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:45:58.080Z] [INFO] 🔴 ALARM: Set pin 1 (Armoire DC -48 SDM NOKIA) to ALARM state on box Casa_Nations Unies_12IO_1
+[2025-05-16T10:45:58.080Z] [INFO] Connection established from 127.0.0.1:35100 to box Fès-ALADARISSA_12IO_1
+[2025-05-16T10:45:58.080Z] [INFO] Received unknown command 10 for box Casa_Nations Unies_12IO_1
+[2025-05-16T10:45:58.080Z] [INFO] 🔴 ALARM: Set pin 8 (Redresseur) to ALARM state on box Fès-ALADARISSA_12IO_1
+[2025-05-16T10:45:58.080Z] [INFO] Generated 3 random alarms
+[2025-05-16T10:45:58.080Z] [INFO] 
+=== 11 Active Alarms ===
+[2025-05-16T10:45:58.080Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 100s ago
+[2025-05-16T10:45:58.080Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 100s ago
+[2025-05-16T10:45:58.080Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 50s ago
+[2025-05-16T10:45:58.081Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 70s ago
+[2025-05-16T10:45:58.081Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 60s ago
+[2025-05-16T10:45:58.081Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 40s ago
+[2025-05-16T10:45:58.081Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 30s ago
+[2025-05-16T10:45:58.081Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 20s ago
+[2025-05-16T10:45:58.081Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur) - CRITICAL - 10s ago
+[2025-05-16T10:45:58.081Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 1 (Armoire DC -48 SDM NOKIA) - CRITICAL - 0s ago
+[2025-05-16T10:45:58.081Z] [INFO] Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 / Pin 8 (Redresseur) - CRITICAL - 0s ago
+[2025-05-16T10:45:58.081Z] [INFO] 
+[2025-05-16T10:45:58.081Z] [INFO] Connection closed for box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:45:58.081Z] [INFO] Received unknown command 10 for box Fès-ALADARISSA_12IO_1
+[2025-05-16T10:45:58.081Z] [INFO] Connection closed for box Casa_Nations Unies_12IO_1
+[2025-05-16T10:45:58.082Z] [INFO] Connection closed for box Fès-ALADARISSA_12IO_1
+[2025-05-16T10:46:01.084Z] [WARN] ✗ Alarm resolution not found in database for Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 10 (Redresseur)
+[2025-05-16T10:46:01.085Z] [WARN] ✗ Alarm not found in database for Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 1 (Armoire DC -48 SDM NOKIA)
+[2025-05-16T10:46:01.085Z] [WARN] ✗ Alarm not found in database for Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 / Pin 8 (Redresseur)
+[2025-05-16T10:46:08.086Z] [INFO] Generating random alarms for 1 boxes...
+[2025-05-16T10:46:08.086Z] [INFO] Connection established from 127.0.0.1:57630 to box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:46:08.086Z] [INFO] 🔴 ALARM: Set pin 4 (Armoire DC -48 SDM NOKIA) to ALARM state on box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:46:08.086Z] [INFO] Generated 1 random alarms
+[2025-05-16T10:46:08.086Z] [INFO] 
+=== 11 Active Alarms ===
+[2025-05-16T10:46:08.086Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 0s ago
+[2025-05-16T10:46:08.087Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 110s ago
+[2025-05-16T10:46:08.087Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 60s ago
+[2025-05-16T10:46:08.087Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 80s ago
+[2025-05-16T10:46:08.087Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 70s ago
+[2025-05-16T10:46:08.087Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 50s ago
+[2025-05-16T10:46:08.087Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 40s ago
+[2025-05-16T10:46:08.087Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 30s ago
+[2025-05-16T10:46:08.087Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur) - CRITICAL - 20s ago
+[2025-05-16T10:46:08.087Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 1 (Armoire DC -48 SDM NOKIA) - CRITICAL - 10s ago
+[2025-05-16T10:46:08.087Z] [INFO] Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 / Pin 8 (Redresseur) - CRITICAL - 10s ago
+[2025-05-16T10:46:08.087Z] [INFO] 
+[2025-05-16T10:46:08.087Z] [INFO] Received unknown command 10 for box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:46:08.087Z] [INFO] Connection closed for box Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:46:11.091Z] [WARN] ✗ Alarm not found in database for Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA)
+[2025-05-16T10:46:18.093Z] [INFO] Generating random alarms for 1 boxes...
+[2025-05-16T10:46:18.093Z] [INFO] Connection established from 127.0.0.1:43198 to box Settat-LGD_12IO_1
+[2025-05-16T10:46:18.094Z] [INFO] 🟢 NORMAL: Set pin 8 (Redresseur) to NORMAL state on box Settat-LGD_12IO_1
+[2025-05-16T10:46:18.094Z] [INFO] Generated 1 random alarms
+[2025-05-16T10:46:18.094Z] [INFO] 
+=== 11 Active Alarms ===
+[2025-05-16T10:46:18.094Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 10s ago
+[2025-05-16T10:46:18.094Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 120s ago
+[2025-05-16T10:46:18.094Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 70s ago
+[2025-05-16T10:46:18.094Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 90s ago
+[2025-05-16T10:46:18.094Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 80s ago
+[2025-05-16T10:46:18.095Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 60s ago
+[2025-05-16T10:46:18.095Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 50s ago
+[2025-05-16T10:46:18.095Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 40s ago
+[2025-05-16T10:46:18.095Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur) - CRITICAL - 30s ago
+[2025-05-16T10:46:18.095Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 1 (Armoire DC -48 SDM NOKIA) - CRITICAL - 20s ago
+[2025-05-16T10:46:18.095Z] [INFO] Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 / Pin 8 (Redresseur) - CRITICAL - 20s ago
+[2025-05-16T10:46:18.095Z] [INFO] 
+[2025-05-16T10:46:18.095Z] [INFO] Received unknown command 10 for box Settat-LGD_12IO_1
+[2025-05-16T10:46:18.095Z] [INFO] Connection closed for box Settat-LGD_12IO_1
+[2025-05-16T10:46:21.098Z] [WARN] ✗ Alarm resolution not found in database for Settat-LGD / Settat-LGD_12IO_1 / Pin 8 (Redresseur)
+[2025-05-16T10:46:28.100Z] [INFO] Generating random alarms for 3 boxes...
+[2025-05-16T10:46:28.101Z] [INFO] Connection established from 127.0.0.1:54016 to box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:46:28.101Z] [INFO] 🔴 ALARM: Set pin 5 (THERMOSTAT D'AMBIANCE) to ALARM state on box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:46:28.101Z] [INFO] Connection established from 127.0.0.1:39018 to box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:46:28.102Z] [INFO] Received unknown command 10 for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:46:28.102Z] [INFO] 🔴 ALARM: Set pin 10 (Redresseur) to ALARM state on box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:46:28.102Z] [INFO] Connection established from 127.0.0.1:53722 to box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:46:28.102Z] [INFO] Received unknown command 10 for box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:46:28.102Z] [INFO] 🔴 ALARM: Set pin 5 (Climatiseur de précision 1) to ALARM state on box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:46:28.103Z] [INFO] Generated 3 random alarms
+[2025-05-16T10:46:28.103Z] [INFO] 
+=== 14 Active Alarms ===
+[2025-05-16T10:46:28.103Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 20s ago
+[2025-05-16T10:46:28.103Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 130s ago
+[2025-05-16T10:46:28.103Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 80s ago
+[2025-05-16T10:46:28.103Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 100s ago
+[2025-05-16T10:46:28.103Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 90s ago
+[2025-05-16T10:46:28.103Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 70s ago
+[2025-05-16T10:46:28.103Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 60s ago
+[2025-05-16T10:46:28.103Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 50s ago
+[2025-05-16T10:46:28.103Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur) - CRITICAL - 40s ago
+[2025-05-16T10:46:28.103Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 1 (Armoire DC -48 SDM NOKIA) - CRITICAL - 30s ago
+[2025-05-16T10:46:28.103Z] [INFO] Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 / Pin 8 (Redresseur) - CRITICAL - 30s ago
+[2025-05-16T10:46:28.103Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 5 (THERMOSTAT D'AMBIANCE) - CRITICAL - 0s ago
+[2025-05-16T10:46:28.103Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 10 (Redresseur) - CRITICAL - 0s ago
+[2025-05-16T10:46:28.103Z] [INFO] Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_1 / Pin 5 (Climatiseur de précision 1) - CRITICAL - 0s ago
+[2025-05-16T10:46:28.103Z] [INFO] 
+[2025-05-16T10:46:28.103Z] [INFO] Connection closed for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:46:28.104Z] [INFO] Received unknown command 10 for box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:46:28.104Z] [INFO] Connection closed for box Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:46:28.104Z] [INFO] Connection closed for box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:46:31.104Z] [WARN] ✗ Alarm not found in database for Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 5 (THERMOSTAT D'AMBIANCE)
+[2025-05-16T10:46:31.105Z] [WARN] ✗ Alarm not found in database for Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 10 (Redresseur)
+[2025-05-16T10:46:31.105Z] [WARN] ✗ Alarm not found in database for Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_1 / Pin 5 (Climatiseur de précision 1)
+[2025-05-16T10:46:38.108Z] [INFO] Generating random alarms for 1 boxes...
+[2025-05-16T10:46:38.108Z] [INFO] Connection established from 127.0.0.1:47192 to box Settat-LGD_12IO_1
+[2025-05-16T10:46:38.108Z] [INFO] 🔴 ALARM: Set pin 7 (Centrale Incendie) to ALARM state on box Settat-LGD_12IO_1
+[2025-05-16T10:46:38.108Z] [INFO] Generated 1 random alarms
+[2025-05-16T10:46:38.108Z] [INFO] 
+=== 15 Active Alarms ===
+[2025-05-16T10:46:38.108Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 30s ago
+[2025-05-16T10:46:38.108Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 140s ago
+[2025-05-16T10:46:38.108Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 90s ago
+[2025-05-16T10:46:38.108Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 110s ago
+[2025-05-16T10:46:38.109Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 100s ago
+[2025-05-16T10:46:38.109Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 80s ago
+[2025-05-16T10:46:38.109Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 70s ago
+[2025-05-16T10:46:38.109Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 60s ago
+[2025-05-16T10:46:38.109Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur) - CRITICAL - 50s ago
+[2025-05-16T10:46:38.109Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 1 (Armoire DC -48 SDM NOKIA) - CRITICAL - 40s ago
+[2025-05-16T10:46:38.109Z] [INFO] Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 / Pin 8 (Redresseur) - CRITICAL - 40s ago
+[2025-05-16T10:46:38.109Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 5 (THERMOSTAT D'AMBIANCE) - CRITICAL - 10s ago
+[2025-05-16T10:46:38.109Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 10 (Redresseur) - CRITICAL - 10s ago
+[2025-05-16T10:46:38.109Z] [INFO] Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_1 / Pin 5 (Climatiseur de précision 1) - CRITICAL - 10s ago
+[2025-05-16T10:46:38.109Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 7 (Centrale Incendie) - MAJOR - 0s ago
+[2025-05-16T10:46:38.109Z] [INFO] 
+[2025-05-16T10:46:38.109Z] [INFO] Received unknown command 10 for box Settat-LGD_12IO_1
+[2025-05-16T10:46:38.109Z] [INFO] Connection closed for box Settat-LGD_12IO_1
+[2025-05-16T10:46:41.114Z] [WARN] ✗ Alarm not found in database for Settat-LGD / Settat-LGD_12IO_1 / Pin 7 (Centrale Incendie)
+[2025-05-16T10:46:48.116Z] [INFO] Generating random alarms for 3 boxes...
+[2025-05-16T10:46:48.116Z] [INFO] Connection established from 127.0.0.1:53682 to box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:46:48.116Z] [INFO] 🔴 ALARM: Set pin 12 (Groupe Electrogène) to ALARM state on box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:46:48.116Z] [INFO] Connection established from 127.0.0.1:60446 to box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:46:48.117Z] [INFO] Received unknown command 10 for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:46:48.117Z] [INFO] 🔴 ALARM: Set pin 5 (Climatiseur de précision 1) to ALARM state on box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:46:48.117Z] [INFO] Connection established from 127.0.0.1:51286 to box Casa_Nations Unies_12IO_1
+[2025-05-16T10:46:48.117Z] [INFO] Received unknown command 10 for box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:46:48.117Z] [INFO] 🔴 ALARM: Set pin 3 (Armoire DC -48 SDM NOKIA) to ALARM state on box Casa_Nations Unies_12IO_1
+[2025-05-16T10:46:48.117Z] [INFO] Generated 3 random alarms
+[2025-05-16T10:46:48.117Z] [INFO] 
+=== 17 Active Alarms ===
+[2025-05-16T10:46:48.117Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 40s ago
+[2025-05-16T10:46:48.117Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 150s ago
+[2025-05-16T10:46:48.118Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 100s ago
+[2025-05-16T10:46:48.118Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 120s ago
+[2025-05-16T10:46:48.118Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 110s ago
+[2025-05-16T10:46:48.118Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 90s ago
+[2025-05-16T10:46:48.118Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 80s ago
+[2025-05-16T10:46:48.118Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 70s ago
+[2025-05-16T10:46:48.118Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur) - CRITICAL - 60s ago
+[2025-05-16T10:46:48.118Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 1 (Armoire DC -48 SDM NOKIA) - CRITICAL - 50s ago
+[2025-05-16T10:46:48.118Z] [INFO] Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 / Pin 8 (Redresseur) - CRITICAL - 50s ago
+[2025-05-16T10:46:48.118Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 5 (THERMOSTAT D'AMBIANCE) - CRITICAL - 20s ago
+[2025-05-16T10:46:48.118Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 10 (Redresseur) - CRITICAL - 20s ago
+[2025-05-16T10:46:48.118Z] [INFO] Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_1 / Pin 5 (Climatiseur de précision 1) - CRITICAL - 0s ago
+[2025-05-16T10:46:48.118Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 7 (Centrale Incendie) - MAJOR - 10s ago
+[2025-05-16T10:46:48.118Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 12 (Groupe Electrogène) - CRITICAL - 0s ago
+[2025-05-16T10:46:48.118Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 3 (Armoire DC -48 SDM NOKIA) - CRITICAL - 0s ago
+[2025-05-16T10:46:48.118Z] [INFO] 
+[2025-05-16T10:46:48.118Z] [INFO] Connection closed for box Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:46:48.119Z] [INFO] Received unknown command 10 for box Casa_Nations Unies_12IO_1
+[2025-05-16T10:46:48.119Z] [INFO] Connection closed for box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:46:48.119Z] [INFO] Connection closed for box Casa_Nations Unies_12IO_1
+[2025-05-16T10:46:51.122Z] [WARN] ✗ Alarm not found in database for Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 12 (Groupe Electrogène)
+[2025-05-16T10:46:51.122Z] [WARN] ✗ Alarm not found in database for Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_1 / Pin 5 (Climatiseur de précision 1)
+[2025-05-16T10:46:51.123Z] [WARN] ✗ Alarm not found in database for Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 3 (Armoire DC -48 SDM NOKIA)
+[2025-05-16T10:46:58.123Z] [INFO] Generating random alarms for 3 boxes...
+[2025-05-16T10:46:58.124Z] [INFO] Connection established from 127.0.0.1:44474 to box Nador-LGD_12IO_1
+[2025-05-16T10:46:58.124Z] [INFO] 🔴 ALARM: Set pin 12 (Groupe Electrogène) to ALARM state on box Nador-LGD_12IO_1
+[2025-05-16T10:46:58.124Z] [INFO] Connection established from 127.0.0.1:39912 to box Casa_Nations Unies_12IO_2
+[2025-05-16T10:46:58.124Z] [INFO] Received unknown command 10 for box Nador-LGD_12IO_1
+[2025-05-16T10:46:58.125Z] [INFO] 🟢 NORMAL: Set pin 4 (Armoire DC -48 SDM NOKIA) to NORMAL state on box Casa_Nations Unies_12IO_2
+[2025-05-16T10:46:58.125Z] [INFO] Connection established from 127.0.0.1:52402 to box Rabat_IAM SOEKARNO_12IO_1
+[2025-05-16T10:46:58.125Z] [INFO] Received unknown command 10 for box Casa_Nations Unies_12IO_2
+[2025-05-16T10:46:58.125Z] [INFO] 🟢 NORMAL: Set pin 7 (Climatiseur de précision 3) to NORMAL state on box Rabat_IAM SOEKARNO_12IO_1
+[2025-05-16T10:46:58.125Z] [INFO] Generated 3 random alarms
+[2025-05-16T10:46:58.125Z] [INFO] 
+=== 18 Active Alarms ===
+[2025-05-16T10:46:58.125Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 50s ago
+[2025-05-16T10:46:58.125Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 160s ago
+[2025-05-16T10:46:58.125Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 110s ago
+[2025-05-16T10:46:58.126Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 130s ago
+[2025-05-16T10:46:58.126Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 120s ago
+[2025-05-16T10:46:58.126Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 100s ago
+[2025-05-16T10:46:58.126Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 90s ago
+[2025-05-16T10:46:58.126Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 80s ago
+[2025-05-16T10:46:58.126Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur) - CRITICAL - 70s ago
+[2025-05-16T10:46:58.126Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 1 (Armoire DC -48 SDM NOKIA) - CRITICAL - 60s ago
+[2025-05-16T10:46:58.126Z] [INFO] Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 / Pin 8 (Redresseur) - CRITICAL - 60s ago
+[2025-05-16T10:46:58.126Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 5 (THERMOSTAT D'AMBIANCE) - CRITICAL - 30s ago
+[2025-05-16T10:46:58.126Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 10 (Redresseur) - CRITICAL - 30s ago
+[2025-05-16T10:46:58.126Z] [INFO] Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_1 / Pin 5 (Climatiseur de précision 1) - CRITICAL - 10s ago
+[2025-05-16T10:46:58.126Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 7 (Centrale Incendie) - MAJOR - 20s ago
+[2025-05-16T10:46:58.126Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 12 (Groupe Electrogène) - CRITICAL - 10s ago
+[2025-05-16T10:46:58.126Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 3 (Armoire DC -48 SDM NOKIA) - CRITICAL - 10s ago
+[2025-05-16T10:46:58.126Z] [INFO] Nador-LGD / Nador-LGD_12IO_1 / Pin 12 (Groupe Electrogène) - CRITICAL - 0s ago
+[2025-05-16T10:46:58.126Z] [INFO] 
+[2025-05-16T10:46:58.126Z] [INFO] Connection closed for box Nador-LGD_12IO_1
+[2025-05-16T10:46:58.127Z] [INFO] Received unknown command 10 for box Rabat_IAM SOEKARNO_12IO_1
+[2025-05-16T10:46:58.127Z] [INFO] Connection closed for box Casa_Nations Unies_12IO_2
+[2025-05-16T10:46:58.127Z] [INFO] Connection closed for box Rabat_IAM SOEKARNO_12IO_1
+[2025-05-16T10:47:01.128Z] [WARN] ✗ Alarm not found in database for Nador-LGD / Nador-LGD_12IO_1 / Pin 12 (Groupe Electrogène)
+[2025-05-16T10:47:01.128Z] [WARN] ✗ Alarm resolution not found in database for Casa_Nations Unies / Casa_Nations Unies_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA)
+[2025-05-16T10:47:01.129Z] [WARN] ✗ Alarm resolution not found in database for Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_1 / Pin 7 (Climatiseur de précision 3)
+[2025-05-16T10:47:08.130Z] [INFO] Generating random alarms for 2 boxes...
+[2025-05-16T10:47:08.131Z] [INFO] Connection established from 127.0.0.1:43442 to box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:47:08.131Z] [INFO] 🟢 NORMAL: Set pin 7 (THERMOSTAT D'AMBIANCE) to NORMAL state on box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:47:08.131Z] [INFO] Connection established from 127.0.0.1:41060 to box Béni Mellal-LGD_12IO_1
+[2025-05-16T10:47:08.131Z] [INFO] Received unknown command 10 for box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:47:08.131Z] [INFO] 🔴 ALARM: Set pin 1 (Climatiseur de précision 1) to ALARM state on box Béni Mellal-LGD_12IO_1
+[2025-05-16T10:47:08.131Z] [INFO] Generated 2 random alarms
+[2025-05-16T10:47:08.131Z] [INFO] 
+=== 19 Active Alarms ===
+[2025-05-16T10:47:08.132Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 60s ago
+[2025-05-16T10:47:08.132Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 170s ago
+[2025-05-16T10:47:08.132Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 120s ago
+[2025-05-16T10:47:08.132Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 140s ago
+[2025-05-16T10:47:08.132Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 130s ago
+[2025-05-16T10:47:08.132Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 110s ago
+[2025-05-16T10:47:08.132Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 100s ago
+[2025-05-16T10:47:08.132Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 90s ago
+[2025-05-16T10:47:08.132Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur) - CRITICAL - 80s ago
+[2025-05-16T10:47:08.132Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 1 (Armoire DC -48 SDM NOKIA) - CRITICAL - 70s ago
+[2025-05-16T10:47:08.132Z] [INFO] Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 / Pin 8 (Redresseur) - CRITICAL - 70s ago
+[2025-05-16T10:47:08.132Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 5 (THERMOSTAT D'AMBIANCE) - CRITICAL - 40s ago
+[2025-05-16T10:47:08.132Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 10 (Redresseur) - CRITICAL - 40s ago
+[2025-05-16T10:47:08.132Z] [INFO] Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_1 / Pin 5 (Climatiseur de précision 1) - CRITICAL - 20s ago
+[2025-05-16T10:47:08.132Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 7 (Centrale Incendie) - MAJOR - 30s ago
+[2025-05-16T10:47:08.132Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 12 (Groupe Electrogène) - CRITICAL - 20s ago
+[2025-05-16T10:47:08.132Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 3 (Armoire DC -48 SDM NOKIA) - CRITICAL - 20s ago
+[2025-05-16T10:47:08.132Z] [INFO] Nador-LGD / Nador-LGD_12IO_1 / Pin 12 (Groupe Electrogène) - CRITICAL - 10s ago
+[2025-05-16T10:47:08.132Z] [INFO] Béni Mellal-LGD / Béni Mellal-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 0s ago
+[2025-05-16T10:47:08.132Z] [INFO] 
+[2025-05-16T10:47:08.133Z] [INFO] Received unknown command 10 for box Béni Mellal-LGD_12IO_1
+[2025-05-16T10:47:08.133Z] [INFO] Connection closed for box Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:47:08.133Z] [INFO] Connection closed for box Béni Mellal-LGD_12IO_1
+[2025-05-16T10:47:11.136Z] [WARN] ✗ Alarm resolution not found in database for Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_1 / Pin 7 (THERMOSTAT D'AMBIANCE)
+[2025-05-16T10:47:11.136Z] [WARN] ✗ Alarm not found in database for Béni Mellal-LGD / Béni Mellal-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1)
+[2025-05-16T10:47:18.138Z] [INFO] Generating random alarms for 3 boxes...
+[2025-05-16T10:47:18.139Z] [INFO] Connection established from 127.0.0.1:60446 to box Béni Mellal-LGD_12IO_1
+[2025-05-16T10:47:18.139Z] [INFO] 🟢 NORMAL: Set pin 11 (Redresseur) to NORMAL state on box Béni Mellal-LGD_12IO_1
+[2025-05-16T10:47:18.139Z] [INFO] Connection established from 127.0.0.1:46554 to box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:47:18.139Z] [INFO] Received unknown command 10 for box Béni Mellal-LGD_12IO_1
+[2025-05-16T10:47:18.140Z] [INFO] 🟢 NORMAL: Set pin 9 (Redresseur) to NORMAL state on box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:47:18.140Z] [INFO] Connection established from 127.0.0.1:42616 to box Rabat_IAM SOEKARNO_12IO_1
+[2025-05-16T10:47:18.140Z] [INFO] Received unknown command 10 for box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:47:18.140Z] [INFO] 🔴 ALARM: Set pin 3 (Armoire DC -48 SDM NOKIA) to ALARM state on box Rabat_IAM SOEKARNO_12IO_1
+[2025-05-16T10:47:18.140Z] [INFO] Generated 3 random alarms
+[2025-05-16T10:47:18.140Z] [INFO] 
+=== 20 Active Alarms ===
+[2025-05-16T10:47:18.141Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_2 / Pin 4 (Armoire DC -48 SDM NOKIA) - CRITICAL - 70s ago
+[2025-05-16T10:47:18.141Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 6 (Climatiseur de précision 1) - MAJOR - 180s ago
+[2025-05-16T10:47:18.141Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 9 (Redresseur) - CRITICAL - 130s ago
+[2025-05-16T10:47:18.141Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 2 (Climatiseur de précision 1) - CRITICAL - 150s ago
+[2025-05-16T10:47:18.141Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 4 (Climatiseur de précision 2) - CRITICAL - 140s ago
+[2025-05-16T10:47:18.141Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 120s ago
+[2025-05-16T10:47:18.141Z] [INFO] Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 3 (Climatiseur de précision 2) - CRITICAL - 110s ago
+[2025-05-16T10:47:18.141Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 6 (Centrale Incendie) - CRITICAL - 100s ago
+[2025-05-16T10:47:18.141Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 11 (Redresseur) - CRITICAL - 90s ago
+[2025-05-16T10:47:18.141Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 1 (Armoire DC -48 SDM NOKIA) - CRITICAL - 80s ago
+[2025-05-16T10:47:18.141Z] [INFO] Fès-ALADARISSA / Fès-ALADARISSA_12IO_1 / Pin 8 (Redresseur) - CRITICAL - 80s ago
+[2025-05-16T10:47:18.141Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 5 (THERMOSTAT D'AMBIANCE) - CRITICAL - 50s ago
+[2025-05-16T10:47:18.141Z] [INFO] Meknès-HAMRIA III / Meknès-HAMRIA III_12IO_1 / Pin 10 (Redresseur) - CRITICAL - 50s ago
+[2025-05-16T10:47:18.141Z] [INFO] Rabat_IAM Hay Emnahda / Rabat_IAM Hay Emnahda_12IO_1 / Pin 5 (Climatiseur de précision 1) - CRITICAL - 30s ago
+[2025-05-16T10:47:18.141Z] [INFO] Settat-LGD / Settat-LGD_12IO_1 / Pin 7 (Centrale Incendie) - MAJOR - 40s ago
+[2025-05-16T10:47:18.141Z] [INFO] Meknès-HAMRIA II / Meknès-HAMRIA II_12IO_1 / Pin 12 (Groupe Electrogène) - CRITICAL - 30s ago
+[2025-05-16T10:47:18.141Z] [INFO] Casa_Nations Unies / Casa_Nations Unies_12IO_1 / Pin 3 (Armoire DC -48 SDM NOKIA) - CRITICAL - 30s ago
+[2025-05-16T10:47:18.141Z] [INFO] Nador-LGD / Nador-LGD_12IO_1 / Pin 12 (Groupe Electrogène) - CRITICAL - 20s ago
+[2025-05-16T10:47:18.141Z] [INFO] Béni Mellal-LGD / Béni Mellal-LGD_12IO_1 / Pin 1 (Climatiseur de précision 1) - CRITICAL - 10s ago
+[2025-05-16T10:47:18.141Z] [INFO] Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_1 / Pin 3 (Armoire DC -48 SDM NOKIA) - CRITICAL - 0s ago
+[2025-05-16T10:47:18.141Z] [INFO] 
+[2025-05-16T10:47:18.141Z] [INFO] Connection closed for box Béni Mellal-LGD_12IO_1
+[2025-05-16T10:47:18.142Z] [INFO] Received unknown command 10 for box Rabat_IAM SOEKARNO_12IO_1
+[2025-05-16T10:47:18.142Z] [INFO] Connection closed for box Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:47:18.142Z] [INFO] Connection closed for box Rabat_IAM SOEKARNO_12IO_1
+[2025-05-16T10:47:21.144Z] [WARN] ✗ Alarm resolution not found in database for Béni Mellal-LGD / Béni Mellal-LGD_12IO_1 / Pin 11 (Redresseur)
+[2025-05-16T10:47:21.144Z] [WARN] ✗ Alarm resolution not found in database for Fès-Ville Nouvelle / Fès-Ville Nouvelle_12IO_1 / Pin 9 (Redresseur)
+[2025-05-16T10:47:21.145Z] [WARN] ✗ Alarm not found in database for Rabat_IAM SOEKARNO / Rabat_IAM SOEKARNO_12IO_1 / Pin 3 (Armoire DC -48 SDM NOKIA)
+[2025-05-16T10:47:26.184Z] [INFO] Received SIGINT signal
+[2025-05-16T10:47:26.184Z] [INFO] Shutting down simulators...
+[2025-05-16T10:47:26.185Z] [INFO] Stopped simulator for Rabat_IAM Hay Emnahda_12IO_1
+[2025-05-16T10:47:26.185Z] [INFO] Stopped simulator for Rabat_IAM Hay Emnahda_12IO_2
+[2025-05-16T10:47:26.185Z] [INFO] Stopped simulator for Rabat_IAM SOEKARNO_12IO_1
+[2025-05-16T10:47:26.185Z] [INFO] Stopped simulator for Rabat_IAM SOEKARNO_12IO_2
+[2025-05-16T10:47:26.185Z] [INFO] Stopped simulator for Casa_Nations Unies_12IO_1
+[2025-05-16T10:47:26.185Z] [INFO] Stopped simulator for Casa_Nations Unies_12IO_2
+[2025-05-16T10:47:26.185Z] [INFO] Stopped simulator for Meknès-HAMRIA II_12IO_1
+[2025-05-16T10:47:26.186Z] [INFO] Stopped simulator for Meknès-HAMRIA III_12IO_1
+[2025-05-16T10:47:26.186Z] [INFO] Stopped simulator for Fès-Ville Nouvelle_12IO_1
+[2025-05-16T10:47:26.186Z] [INFO] Stopped simulator for Fès-ALADARISSA_12IO_1
+[2025-05-16T10:47:26.186Z] [INFO] Stopped simulator for Oujda-Téléphone_12IO_1
+[2025-05-16T10:47:26.186Z] [INFO] Stopped simulator for Nador-LGD_12IO_1
+[2025-05-16T10:47:26.186Z] [INFO] Stopped simulator for Settat-LGD_12IO_1
+[2025-05-16T10:47:26.186Z] [INFO] Stopped simulator for Béni Mellal-LGD_12IO_1
+[2025-05-16T10:47:26.193Z] [INFO] Closed database connection
+[2025-05-16T10:47:26.193Z] [INFO] Simulation ended at 2025-05-16T10:47:26.193Z

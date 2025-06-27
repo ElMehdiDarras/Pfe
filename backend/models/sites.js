@@ -1,3 +1,4 @@
+// models/sites.js
 const mongoose = require('mongoose');
 
 // Define the Box schema
@@ -37,8 +38,8 @@ const equipmentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['OK', 'WARNING', 'MAJOR', 'CRITICAL', 'UNKNOWN'],
-    default: 'OK'
+    enum: ['OK', 'WARNING', 'MAJOR', 'CRITICAL', 'UNKNOWN', 'UNREACHABLE'],
+    default: 'UNREACHABLE'
   },
   boxId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -69,9 +70,6 @@ const pinSchema = new mongoose.Schema({
   }
 });
 
-// Add to boxSchema
-pins: [pinSchema]
-
 // Define the Site schema
 const siteSchema = new mongoose.Schema({
   name: {
@@ -94,8 +92,8 @@ const siteSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['OK', 'WARNING', 'MAJOR', 'CRITICAL'],
-    default: 'OK'
+    enum: ['OK', 'WARNING', 'MAJOR', 'CRITICAL', 'UNREACHABLE'],
+    default: 'UNREACHABLE'
   },
   activeAlarms: {
     type: Number,
@@ -127,7 +125,7 @@ siteSchema.methods.updateStatus = function() {
   
   // Check equipment status
   for (const equipment of this.equipment) {
-    if (equipment.status !== 'OK') {
+    if (equipment.status !== 'OK' && equipment.status !== 'UNREACHABLE') {
       activeAlarms++;
       if (equipment.status === 'CRITICAL') {
         worstStatus = 'CRITICAL';

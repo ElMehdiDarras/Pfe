@@ -26,18 +26,20 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
+    required: true,
     trim: true,
     lowercase: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address']
   },
   phoneNumber: {
     type: String,
-    trim: true
+    trim: true,
+    required: true
   },
   role: {
     type: String,
     enum: ['agent', 'supervisor', 'administrator'],
-    default: 'agent'
+    required: true
   },
   // For agents, we need to specify which sites they can access
   sites: [{
@@ -68,16 +70,14 @@ const userSchema = new mongoose.Schema({
   },
   // For audit and security
   lastLogin: {
-    type: Date,
-    default: null
+    type: Date
   },
   active: {
     type: Boolean,
     default: true
   },
   passwordChangedAt: {
-    type: Date,
-    default: Date.now
+    type: Date
   }
 }, {
   timestamps: true
@@ -98,6 +98,12 @@ userSchema.pre('save', async function(next) {
     const salt = await bcrypt.genSalt(10);
     // Hash the password with the salt
     this.password = await bcrypt.hash(this.password, salt);
+    
+    // Set passwordChangedAt when password is modified
+    if (this.isModified('password')) {
+      this.passwordChangedAt = new Date();
+    }
+    
     next();
   } catch (error) {
     next(error);
@@ -119,7 +125,7 @@ userSchema.methods.generateAuthToken = function() {
       sites: this.sites
     },
     process.env.JWT_SECRET || 'alarm-manager-secret',
-    { expiresIn: '8h' }
+    { expiresIn: process.env.TOKEN_EXPIRY || '8h' }
   );
 };
 

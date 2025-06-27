@@ -1,24 +1,8 @@
+// middleware/auth.js
 const jwt = require('jsonwebtoken');
 const Site = require('../models/sites');
 const User = require('../models/users');
-
-const TRUSTED_IPS = [
-  '10.29.92.41',    
-  '10.29.145.245',
-  '10.29.94.41',
-  '10.29.143.94',
-  '10.29.96.41',
-  '10.29.98.41',
-  '10.29.127.41',
-  '10.29.125.41',
-  '10.29.133.21',
-  '10.29.133.22',
-  '10.29.136.22',
-  '10.29.139.21',
-  '10.29.139.22',  
-  '127.0.0.1',      
-  'localhost',      
-];
+const TRUSTED_IPS = require('../config/trusted-ips');
 
 // Middleware to authenticate users via JWT
 const auth = async (req, res, next) => {
@@ -106,7 +90,6 @@ const flexibleAuth = async (req, res, next) => {
       };
       return next();
     }
-    
     
     // If not from trusted IP, use regular auth
     let token;

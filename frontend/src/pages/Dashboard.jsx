@@ -158,10 +158,20 @@ const Dashboard = () => {
   // Add state for time range selection
   const [timeRange, setTimeRange] = useState('24h');
   
-  // Fetch data using your existing hooks, now passing the timeRange
+  // Fetch data using hooks with user role dependency
   const { data: sites, isLoading: isSitesLoading, error: sitesError } = useSiteSummary();
-  const { data: alarmStats, isLoading: isStatsLoading, error: statsError, refetch: refetchStats } = useAlarmStatistics(timeRange);
-  const { data: activeAlarms, isLoading: isAlarmsLoading, error: alarmsError, refetch: refetchAlarms } = useActiveAlarms();
+  const { 
+    data: alarmStats, 
+    isLoading: isStatsLoading, 
+    error: statsError, 
+    refetch: refetchStats 
+  } = useAlarmStatistics(timeRange);
+  const { 
+    data: activeAlarms, 
+    isLoading: isAlarmsLoading, 
+    error: alarmsError, 
+    refetch: refetchAlarms 
+  } = useActiveAlarms();
   
   // Loading and error states
   const isLoading = isSitesLoading || isStatsLoading || isAlarmsLoading;
@@ -187,25 +197,25 @@ const Dashboard = () => {
     };
   }, [timeRange, refetchStats, refetchAlarms]);
 
+  // Force refresh on role or site permission changes
+  useEffect(() => {
+    if (user) {
+      // Invalidate and refetch data when user or permissions change
+      queryClient.invalidateQueries({ queryKey: ['alarms'] });
+      queryClient.invalidateQueries({ queryKey: ['sites'] });
+    }
+  }, [user, queryClient]);
+
   // Add debugging logs for alarm statistics data
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       console.log('Alarm statistics loaded:', alarmStats);
       if (alarmStats) {
         console.log('Statistics summary:', alarmStats.summary);
-        console.log('Time series data:', alarmStats.timeSeriesData);
-        
-        if (alarmStats.timeSeriesData) {
-          console.log('Hourly data available:', !!alarmStats.timeSeriesData.hourly);
-          console.log('Recent data available:', !!alarmStats.timeSeriesData.recent);
-          
-          if (alarmStats.timeSeriesData.hourly) {
-            console.log('Hourly data example:', alarmStats.timeSeriesData.hourly[0]);
-          }
-        }
+        console.log('Roles and sites from user:', user?.role, user?.sites);
       }
     }
-  }, [alarmStats]);
+  }, [alarmStats, user]);
 
   // Handle tab change
   const handleTabChange = (event, newValue) => {
@@ -225,7 +235,16 @@ const Dashboard = () => {
 
   // Get summary statistics from alarm data
   const stats = React.useMemo(() => {
-    if (!alarmStats) return { critical: 0, major: 0, warning: 0, total: 0 };
+    if (!alarmStats || !alarmStats.summary) return { 
+      critical: 0, 
+      major: 0, 
+      warning: 0, 
+      total: 0,
+      boxes: 0,
+      equipment: 0,
+      acknowledgedPercentage: 0
+    };
+    
     const { critical = 0, major = 0, warning = 0 } = alarmStats.summary || {};
     return { 
       critical, 
@@ -397,7 +416,7 @@ const Dashboard = () => {
         </Box>
       </Box>
 
-      {/* Status summary cards */}
+      {/* Status summary cards - using filtered data from backend */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <MetricCard 

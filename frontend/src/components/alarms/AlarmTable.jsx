@@ -61,12 +61,12 @@ const formatTimestamp = (timestamp) => {
 const AlarmTable = ({ alarms = [], showAcknowledgeButton = false, onRefreshNeeded }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, alarmId: null });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, alarmId: null, action: null });
   
-  // Mutation for acknowledging alarms
-  const acknowledgeMutation = useMutation({
+  // Mutation for ignoring alarms
+  const ignoreMutation = useMutation({
     mutationFn: (alarmId) => {
-      return alarmService.acknowledgeAlarm(alarmId, user.id);
+      return alarmService.ignoreAlarm(alarmId, user.id);
     },
     onSuccess: () => {
       // Invalidate relevant queries
@@ -79,27 +79,29 @@ const AlarmTable = ({ alarms = [], showAcknowledgeButton = false, onRefreshNeede
     }
   });
   
-  // Handle alarm acknowledgment
-  const handleAcknowledge = (alarmId) => {
+  // Handle alarm ignore action
+  const handleIgnore = (alarmId) => {
     if (!alarmId) {
-      console.error('Cannot acknowledge alarm: Missing alarm ID');
+      console.error('Cannot ignore alarm: Missing alarm ID');
       return;
     }
     
-    setConfirmDialog({ open: true, alarmId });
+    setConfirmDialog({ open: true, alarmId, action: 'ignore' });
   };
   
-  // Confirm acknowledgment
-  const confirmAcknowledge = () => {
+  // Confirm action (ignore)
+  const confirmAction = () => {
     if (confirmDialog.alarmId) {
-      acknowledgeMutation.mutate(confirmDialog.alarmId);
+      if (confirmDialog.action === 'ignore') {
+        ignoreMutation.mutate(confirmDialog.alarmId);
+      }
     }
-    setConfirmDialog({ open: false, alarmId: null });
+    setConfirmDialog({ open: false, alarmId: null, action: null });
   };
   
-  // Cancel acknowledgment
-  const cancelAcknowledge = () => {
-    setConfirmDialog({ open: false, alarmId: null });
+  // Cancel action
+  const cancelAction = () => {
+    setConfirmDialog({ open: false, alarmId: null, action: null });
   };
   
   // Sort alarms by timestamp (newest first)
@@ -149,24 +151,24 @@ const AlarmTable = ({ alarms = [], showAcknowledgeButton = false, onRefreshNeede
                   <TableCell>{formatTimestamp(alarm.timestamp)}</TableCell>
                   {showAcknowledgeButton && (
                     <TableCell>
-                      {alarm.status !== 'OK' && !alarm.acknowledgedBy && (
+                      {alarm.status !== 'OK' && !alarm.acknowledgedBy && !alarm.ignoredBy && (
                         <Button 
                           size="small" 
                           variant="outlined" 
                           color="primary"
-                          onClick={() => handleAcknowledge(alarm._id)}
-                          disabled={acknowledgeMutation.isLoading && acknowledgeMutation.variables === alarm._id}
+                          onClick={() => handleIgnore(alarm._id)}
+                          disabled={ignoreMutation.isLoading && ignoreMutation.variables === alarm._id}
                         >
-                          {acknowledgeMutation.isLoading && acknowledgeMutation.variables === alarm._id ? (
+                          {ignoreMutation.isLoading && ignoreMutation.variables === alarm._id ? (
                             <CircularProgress size={20} />
                           ) : (
-                            'Acquitter'
+                            'Ignorer'
                           )}
                         </Button>
                       )}
-                      {alarm.acknowledgedBy && (
+                      {alarm.ignoredBy && (
                         <Typography variant="body2" color="text.secondary">
-                          Acquitté par {alarm.acknowledgedBy}
+                          Ignoré par {alarm.ignoredBy}
                         </Typography>
                       )}
                     </TableCell>
@@ -187,31 +189,31 @@ const AlarmTable = ({ alarms = [], showAcknowledgeButton = false, onRefreshNeede
       {/* Confirmation dialog */}
       <Dialog
         open={confirmDialog.open}
-        onClose={cancelAcknowledge}
-        aria-labelledby="acknowledge-dialog-title"
+        onClose={cancelAction}
+        aria-labelledby="alert-dialog-title"
       >
-        <DialogTitle id="acknowledge-dialog-title">
-          Confirmer l'acquittement
+        <DialogTitle id="alert-dialog-title">
+          Confirmer l'ignorance
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Voulez-vous vraiment acquitter cette alarme ?
+            Voulez-vous vraiment ignorer cette alarme ? Elle ne sera plus comptée comme une alarme active.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={cancelAcknowledge} color="inherit">
+          <Button onClick={cancelAction} color="inherit">
             Annuler
           </Button>
           <Button 
-            onClick={confirmAcknowledge} 
+            onClick={confirmAction} 
             color="primary" 
             variant="contained"
-            disabled={acknowledgeMutation.isLoading}
+            disabled={ignoreMutation.isLoading}
           >
-            {acknowledgeMutation.isLoading ? (
+            {ignoreMutation.isLoading ? (
               <CircularProgress size={20} color="inherit" />
             ) : (
-              'Confirmer'
+              'Ignorer'
             )}
           </Button>
         </DialogActions>

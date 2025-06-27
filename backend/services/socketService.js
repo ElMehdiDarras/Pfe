@@ -1,4 +1,4 @@
-// src/services/socketService.js
+// services/socketService.js
 const socketIO = require('socket.io');
 const jwt = require('jsonwebtoken');
 const User = require('../models/users');
@@ -16,7 +16,7 @@ const connectedClients = new Map();
 const initSocketServer = (server) => {
   const io = socketIO(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:5000',
+      origin: process.env.FRONTEND_URL,
       methods: ['GET', 'POST'],
       credentials: true
     }
@@ -266,14 +266,9 @@ const processAlarmNotification = async (alarm, io) => {
               },
               { session }
             );
-            
-            // Only add a resolution notification if we want to track resolutions
-            // (you can comment this out if you don't want resolution notifications)
-           // notificationsToCreate.push(notification);
           } else {
             // For new alarms, always create notifications
             notificationsToCreate.push(notification);
-            console.log(`Created ${notificationsToCreate.length} notifications`);
           }
         }
       }
@@ -288,7 +283,18 @@ const processAlarmNotification = async (alarm, io) => {
       
       // Emit events to connected clients
       broadcastNotifications(io, notificationsToCreate, alarm);
-      console.log('Server emitting alarm event:', alarmEventData);
+      console.log('Server emitting alarm event:', alarm);
+      
+      // Send email for CRITICAL alarms
+      if (alarm.status === 'CRITICAL') {
+        try {
+          const emailService = require('./emailService');
+          await emailService.sendCriticalAlarmEmail(alarm);
+        } catch (emailError) {
+          console.error('Error sending email notification:', emailError);
+          // Continue processing even if email fails
+        }
+      }
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
@@ -372,7 +378,6 @@ const broadcastNotifications = (io, notifications, alarm) => {
       // For newly resolved alarms (OK status)
       if (alarm.status === 'OK' && alarm.previousStatus) {
         alarmEventData.data.isResolved = true;
-        alarmEventData.data.resolvedAt = alarm.resolvedAt || new Date().toISOString();
       }
       
       // Emit to site-specific rooms and global supervisors/admins

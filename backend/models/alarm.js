@@ -1,3 +1,4 @@
+// models/alarm.js
 const mongoose = require('mongoose');
 
 const alarmSchema = new mongoose.Schema({
@@ -34,15 +35,15 @@ const alarmSchema = new mongoose.Schema({
     default: Date.now,
     index: true
   },
-  acknowledgedBy: {
+  ignored: {
+    type: Boolean,
+    default: false
+  },
+  ignoredBy: {
     type: String,
     default: null
   },
-  acknowledgedAt: {
-    type: Date,
-    default: null
-  },
-  resolvedAt: {
+  ignoredAt: {
     type: Date,
     default: null
   },
@@ -63,7 +64,7 @@ const alarmSchema = new mongoose.Schema({
 
 // Create a compound index for efficient queries
 alarmSchema.index({ siteId: 1, boxId: 1, pinId: 1, timestamp: -1 });
-alarmSchema.index({ status: 1, acknowledgedAt: 1 }); // For filtering active alarms
+alarmSchema.index({ status: 1, ignored: 1 }); // For filtering active alarms
 alarmSchema.index({ timestamp: -1 }); // For time-series queries
 
 // Middleware to track status changes in history
@@ -81,10 +82,10 @@ alarmSchema.pre('save', function(next) {
 alarmSchema.statics.getActiveAlarms = function() {
   return this.find({
     status: { $ne: 'OK' },
-    resolvedAt: null
+    resolvedAt: null,
+    ignoredBy: null  // Add this condition to exclude ignored alarms
   }).sort({ timestamp: -1 });
 };
-
 // Static method to get alarms by site
 alarmSchema.statics.getAlarmsBySite = function(siteId) {
   return this.find({ siteId }).sort({ timestamp: -1 });
@@ -100,10 +101,17 @@ alarmSchema.statics.getAlarmsInTimeRange = function(startDate, endDate) {
   }).sort({ timestamp: -1 });
 };
 
-// Method to acknowledge an alarm
-alarmSchema.methods.acknowledge = function(userId) {
-  this.acknowledgedBy = userId;
-  this.acknowledgedAt = new Date();
+// Method to ignore an alarm
+alarmSchema.methods.ignore = function() {
+  this.ignored = true;
+  this.ignoredAt = new Date();
+  return this.save();
+};
+
+// Method to unignore an alarm
+alarmSchema.methods.unignore = function() {
+  this.ignored = false;
+  this.ignoredAt = null;
   return this.save();
 };
 
